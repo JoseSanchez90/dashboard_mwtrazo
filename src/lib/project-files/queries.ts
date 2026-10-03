@@ -13,7 +13,7 @@ export async function listProjectFiles(projectId?: string): Promise<ProjectFile[
   const supabase = await createClient(); let query = supabase.from("project_files").select(columns).order("created_at", { ascending: false });
   if (projectId) query = query.eq("project_id", projectId);
   const { data, error } = await query; if (error) throw new Error("No fue posible cargar los archivos.");
-  return (data as unknown as FileRow[]).map(({ projects, profiles, ...file }) => ({ ...file, project_name: projects?.name ?? "Proyecto no disponible", uploader_name: profiles?.full_name ?? "Usuario no disponible" }));
+  return (data as unknown as FileRow[]).map(({ projects, profiles, ...file }) => ({ ...file, project_name: projects?.name ?? "Proyecto no disponible", uploader_name: profiles?.full_name ?? "Usuario eliminado" }));
 }
 
 export async function getProjectFileOptions(): Promise<ProjectFileOptions> {

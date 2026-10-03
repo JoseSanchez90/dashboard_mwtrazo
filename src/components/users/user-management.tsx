@@ -7,6 +7,7 @@ import {
   LoaderCircle,
   Pencil,
   Plus,
+  Trash2,
   UserRoundCheck,
   UserRoundX,
 } from "lucide-react";
@@ -15,8 +16,10 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 
 import {
   createUserAction,
+  deleteUserAction,
   updateUserAction,
 } from "@/app/(dashboard)/usuarios/actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -192,6 +195,7 @@ export function CreateUserButton() {
 
 function EditUserButton({ user }: { user: ManagedUser }) {
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [serverError, setServerError] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -222,6 +226,16 @@ function EditUserButton({ user }: { user: ManagedUser }) {
       router.refresh();
     });
   });
+
+  const remove = () => {
+    setServerError("");
+    startTransition(async () => {
+      const result = await deleteUserAction(user.id);
+      if (!result.ok) { setConfirmDelete(false); setOpen(true); setServerError(result.error); return; }
+      if (result.deletedCurrentUser) { router.replace("/iniciar-sesion"); router.refresh(); return; }
+      setConfirmDelete(false); setOpen(false); router.refresh();
+    });
+  };
 
   return (
     <>
@@ -307,6 +321,9 @@ function EditUserButton({ user }: { user: ManagedUser }) {
             )}
           </form>
           <DialogFooter>
+            <Button type="button" variant="destructive" onClick={() => { setOpen(false); setConfirmDelete(true); }} disabled={pending} className="sm:mr-auto">
+              <Trash2 />Eliminar usuario
+            </Button>
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
@@ -321,6 +338,23 @@ function EditUserButton({ user }: { user: ManagedUser }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia><Trash2 /></AlertDialogMedia>
+            <AlertDialogTitle>¿Eliminar a {user.full_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán su cuenta de acceso, perfil, asignaciones y preferencias. El historial del estudio se conservará como perteneciente a un usuario eliminado. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
+              {pending ? <LoaderCircle className="animate-spin" /> : <Trash2 />}Eliminar definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

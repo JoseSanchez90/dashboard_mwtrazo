@@ -7,18 +7,19 @@ import { requirePermission } from "@/lib/permissions/guards";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   createUserSchema,
+  deleteUserSchema,
   updateUserSchema,
   type CreateUserInput,
   type UpdateUserInput,
 } from "@/lib/validations/users";
 
-export type UserActionResult = { ok: true } | { ok: false; error: string };
+export type UserActionResult = { ok: true; deletedCurrentUser?: boolean } | { ok: false; error: string };
 
 function adminErrorMessage(message: string) {
   if (message.toLowerCase().includes("already")) {
     return "Ya existe una cuenta con ese correo.";
   }
-  if (message.includes("al menos un administrador")) {
+  if (message.toLowerCase().includes("administrador activo")) {
     return "MWTRAZO debe conservar al menos un administrador activo.";
   }
   return "La operación no pudo completarse. Inténtalo nuevamente.";
@@ -76,5 +77,26 @@ export async function updateUserAction(input: UpdateUserInput): Promise<UserActi
 
   revalidatePath("/usuarios");
   return { ok: true };
+}
+
+export async function deleteUserAction(id: string): Promise<UserActionResult> {
+  const currentUser = await requirePermission(PERMISSIONS.MANAGE_USERS);
+  const parsed = deleteUserSchema.safeParse(id);
+  if (!parsed.success) return { ok: false, error: "Usuario inválido." };
+
+  const admin = createAdminClient();
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", parsed.data)
+    .maybeSingle();
+  if (profileError || !profile) return { ok: false, error: "El usuario no existe." };
+
+  const { error } = await admin.auth.admin.deleteUser(parsed.data);
+  if (error) return { ok: false, error: adminErrorMessage(error.message) };
+
+  if (profile.avatar_url) await admin.storage.from("avatars").remove([profile.avatar_url]);
+  revalidatePath("/usuarios");
+  return { ok: true, deletedCurrentUser: currentUser.id === parsed.data };
 }
 

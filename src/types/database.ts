@@ -37,25 +37,25 @@ export type Database = {
         Relationships: [{ foreignKeyName: "notifications_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
       };
       activity_logs: {
-        Row: { id: string; user_id: string; entity_type: ActivityEntityType; entity_id: string; action: ActivityAction; metadata: Record<string, unknown>; created_at: string };
+        Row: { id: string; user_id: string | null; entity_type: ActivityEntityType; entity_id: string; action: ActivityAction; metadata: Record<string, unknown>; created_at: string };
         Insert: { id?: string; user_id: string; entity_type: ActivityEntityType; entity_id: string; action: ActivityAction; metadata?: Record<string, unknown>; created_at?: string };
         Update: Record<string, never>;
         Relationships: [{ foreignKeyName: "activity_logs_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
       };
       project_payments: {
-        Row: { id: string; project_id: string; concept: string; amount: number; due_date: string | null; paid_at: string | null; status: PaymentStatus; notes: string | null; created_by: string; created_at: string; updated_at: string };
+        Row: { id: string; project_id: string; concept: string; amount: number; due_date: string | null; paid_at: string | null; status: PaymentStatus; notes: string | null; created_by: string | null; created_at: string; updated_at: string };
         Insert: { id?: string; project_id: string; concept: string; amount: number; due_date?: string | null; paid_at?: string | null; status?: PaymentStatus; notes?: string | null; created_by: string; created_at?: string; updated_at?: string };
         Update: { project_id?: string; concept?: string; amount?: number; due_date?: string | null; paid_at?: string | null; status?: PaymentStatus; notes?: string | null };
         Relationships: [{ foreignKeyName: "project_payments_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] }, { foreignKeyName: "project_payments_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
       };
       project_expenses: {
-        Row: { id: string; project_id: string; concept: string; amount: number; expense_date: string; notes: string | null; created_by: string; created_at: string; updated_at: string };
+        Row: { id: string; project_id: string; concept: string; amount: number; expense_date: string; notes: string | null; created_by: string | null; created_at: string; updated_at: string };
         Insert: { id?: string; project_id: string; concept: string; amount: number; expense_date: string; notes?: string | null; created_by: string; created_at?: string; updated_at?: string };
         Update: { project_id?: string; concept?: string; amount?: number; expense_date?: string; notes?: string | null };
         Relationships: [{ foreignKeyName: "project_expenses_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] }, { foreignKeyName: "project_expenses_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
       };
       project_files: {
-        Row: { id: string; project_id: string; uploaded_by: string; file_name: string; file_path: string; file_type: string; file_size: number; stored_size: number; compression: "none" | "gzip"; category: ProjectFileCategory; created_at: string };
+        Row: { id: string; project_id: string; uploaded_by: string | null; file_name: string; file_path: string; file_type: string; file_size: number; stored_size: number; compression: "none" | "gzip"; category: ProjectFileCategory; created_at: string };
         Insert: { id?: string; project_id: string; uploaded_by: string; file_name: string; file_path: string; file_type: string; file_size: number; stored_size: number; compression?: "none" | "gzip"; category?: ProjectFileCategory; created_at?: string };
         Update: Record<string, never>;
         Relationships: [
@@ -64,7 +64,7 @@ export type Database = {
         ];
       };
       events: {
-        Row: { id: string; project_id: string | null; client_id: string | null; title: string; description: string | null; type: EventType; start_at: string; end_at: string; all_day: boolean; location: string | null; created_by: string; assigned_to: string | null; created_at: string; updated_at: string };
+        Row: { id: string; project_id: string | null; client_id: string | null; title: string; description: string | null; type: EventType; start_at: string; end_at: string; all_day: boolean; location: string | null; created_by: string | null; assigned_to: string | null; created_at: string; updated_at: string };
         Insert: { id?: string; project_id?: string | null; client_id?: string | null; title: string; description?: string | null; type?: EventType; start_at: string; end_at: string; all_day?: boolean; location?: string | null; created_by: string; assigned_to?: string | null; created_at?: string; updated_at?: string };
         Update: { project_id?: string | null; client_id?: string | null; title?: string; description?: string | null; type?: EventType; start_at?: string; end_at?: string; all_day?: boolean; location?: string | null; assigned_to?: string | null };
         Relationships: [
@@ -75,7 +75,7 @@ export type Database = {
         ];
       };
       tasks: {
-        Row: { id: string; project_id: string | null; title: string; description: string | null; assigned_to: string | null; created_by: string; status: TaskStatus; priority: TaskPriority; start_date: string | null; due_date: string | null; completed_by: string | null; completed_at: string | null; created_at: string; updated_at: string };
+        Row: { id: string; project_id: string | null; title: string; description: string | null; assigned_to: string | null; created_by: string | null; status: TaskStatus; priority: TaskPriority; start_date: string | null; due_date: string | null; completed_by: string | null; completed_at: string | null; created_at: string; updated_at: string };
         Insert: { id?: string; project_id?: string | null; title: string; description?: string | null; assigned_to?: string | null; created_by: string; status?: TaskStatus; priority?: TaskPriority; start_date?: string | null; due_date?: string | null; completed_by?: string | null; completed_at?: string | null; created_at?: string; updated_at?: string };
         Update: { project_id?: string | null; title?: string; description?: string | null; assigned_to?: string | null; status?: TaskStatus; priority?: TaskPriority; start_date?: string | null; due_date?: string | null; completed_by?: string | null; completed_at?: string | null };
         Relationships: [
@@ -98,7 +98,7 @@ export type Database = {
           district: string | null;
           city: string | null;
           notes: string | null;
-          created_by: string;
+          created_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -114,7 +114,7 @@ export type Database = {
           district?: string | null;
           city?: string | null;
           notes?: string | null;
-          created_by: string;
+          created_by: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -298,7 +298,7 @@ export type Database = {
           progress: number;
           fee: number | null;
           cover_image: string | null;
-          created_by: string;
+          created_by: string | null;
           created_at: string;
           updated_at: string;
         };

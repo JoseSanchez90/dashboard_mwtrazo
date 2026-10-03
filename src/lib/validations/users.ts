@@ -25,6 +25,8 @@ export const updateUserSchema = z.object({
   is_active: z.boolean(),
 });
 
+export const deleteUserSchema = z.uuid();
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 

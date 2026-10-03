@@ -8,7 +8,7 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = { low: "Baja",
 
 export type Task = {
   id: string; project_id: string | null; title: string; description: string | null;
-  assigned_to: string | null; created_by: string; status: TaskStatus; priority: TaskPriority;
+  assigned_to: string | null; created_by: string | null; status: TaskStatus; priority: TaskPriority;
   start_date: string | null; due_date: string | null; completed_by: string | null; completed_at: string | null;
   created_at: string; updated_at: string;
 };
