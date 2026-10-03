@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireAuthenticatedUser } from "@/lib/auth/session";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { getProjectDetail } from "@/lib/projects/queries";
+import { DEFAULT_PROJECT_COVER } from "@/lib/projects/cover";
 import { getTaskOptions, listTasks } from "@/lib/tasks/queries";
 import { getEventOptions, listEvents } from "@/lib/events/queries";
 import { getProjectFileOptions, listProjectFiles } from "@/lib/project-files/queries";
@@ -70,14 +71,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-7">
       <header className="overflow-hidden rounded-xl border bg-card">
-        <div className="relative min-h-44 bg-muted bg-cover bg-center p-5 sm:min-h-52 sm:p-7" style={project.cover_image ? { backgroundImage: `linear-gradient(to top, rgb(0 0 0 / 0.76), rgb(0 0 0 / 0.08)), url(${JSON.stringify(project.cover_image)})` } : undefined}>
-          {!project.cover_image && <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--muted),var(--background))]" />}
+        <div className="relative min-h-44 bg-muted bg-cover bg-center p-5 sm:min-h-52 sm:p-7" style={{ backgroundImage: `linear-gradient(to top, rgb(0 0 0 / 0.8), rgb(0 0 0 / 0.08)), url(${JSON.stringify(project.cover_image || DEFAULT_PROJECT_COVER)}), url(${JSON.stringify(DEFAULT_PROJECT_COVER)})` }}>
           <div className="relative flex h-full min-h-34 flex-col justify-between sm:min-h-38">
             <div className="flex justify-end"><Link href={`/proyectos/${project.id}/editar`} className={buttonVariants({ variant: "outline" })}><Pencil />Editar proyecto</Link></div>
-            <div className={project.cover_image ? "text-white" : "text-foreground"}>
+            <div className="text-white">
               <div className="flex flex-wrap items-center gap-2"><span className="rounded-md bg-background/90 px-2 py-1 font-mono text-xs font-medium text-foreground">{project.code}</span><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[project.status]}`}>{PROJECT_STATUS_LABELS[project.status]}</span></div>
               <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>
-              <p className={project.cover_image ? "mt-2 text-sm text-white/75" : "mt-2 text-sm text-muted-foreground"}>{project.client.name}</p>
+              <p className="mt-2 text-sm text-white/75">{project.client.name}</p>
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ export default async function EditProjectModal({ params }: { params: Promise<{ i
   const { id } = await params;
   const [project, options, user] = await Promise.all([
     getProjectForEdit(id),
-    getProjectFormOptions(),
+    getProjectFormOptions(id),
     requireAuthenticatedUser(),
   ]);
   if (!project) notFound();

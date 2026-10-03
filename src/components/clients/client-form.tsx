@@ -106,11 +106,13 @@ export function ClientForm({ client, modal = false }: { client?: Client; modal?:
   return (
     <form onSubmit={submit} className={modal ? "space-y-5" : "mt-8 space-y-8"} noValidate>
       <section className={cn("rounded-xl border bg-card", modal && "border-0 bg-transparent")}>
-        <div className={cn("border-b px-5 py-4", modal && "px-0 pt-1")}>
-          <h2 className="font-semibold">Información principal</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Datos de identificación y contacto del cliente.</p>
-        </div>
-        <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
+        {!modal && (
+          <div className="border-b px-5 py-4">
+            <h2 className="font-semibold">Información principal</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Datos de identificación y contacto del cliente.</p>
+          </div>
+        )}
+        <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0 pt-1")}>
           <Field label="Nombre *" error={errors.name?.message}>
             <Input autoFocus aria-invalid={Boolean(errors.name)} {...register("name")} />
           </Field>
@@ -147,8 +149,8 @@ export function ClientForm({ client, modal = false }: { client?: Client; modal?:
 
       <section className={cn("rounded-xl border bg-card", modal && "border-0 bg-transparent")}>
         <div className={cn("border-b px-5 py-4", modal && "px-0")}>
-          <h2 className="font-semibold">Ubicación y notas</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Información complementaria para el trabajo del estudio.</p>
+          <h2 className={cn("font-semibold", modal && "text-xs tracking-wide text-muted-foreground uppercase")}>Ubicación y notas</h2>
+          {!modal && <p className="mt-1 text-sm text-muted-foreground">Información complementaria para el trabajo del estudio.</p>}
         </div>
         <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
           <Field label="Dirección" error={errors.address?.message}>

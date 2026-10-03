@@ -45,7 +45,7 @@ export function AppSidebar({ user, studio }: AppSidebarProps) {
           size="icon-sm"
           onClick={() => setCollapsed((value) => !value)}
           aria-label={collapsed ? "Expandir navegación" : "Contraer navegación"}
-          className="absolute -top-3 -right-3 z-10 hidden rounded-full bg-background shadow-xs lg:inline-flex"
+          className="absolute -top-3 -right-3 z-10 hidden rounded-full border-black bg-black text-white shadow-xs hover:bg-black hover:text-white lg:inline-flex dark:border-white dark:bg-white dark:text-black dark:hover:bg-white dark:hover:text-black"
         >
           {collapsed ? <ChevronRight /> : <ChevronLeft />}
         </Button>

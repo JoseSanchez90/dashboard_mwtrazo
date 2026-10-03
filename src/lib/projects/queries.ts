@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permissions/guards";
+import { PROJECT_COVER_BUCKET, projectCoverPath } from "@/lib/projects/cover";
 import { projectIdSchema } from "@/lib/validations/projects";
 import type {
   ProjectEditData,
@@ -56,6 +57,18 @@ function mapListProject(row: JoinedProject): ProjectListItem {
   };
 }
 
+async function resolveProjectCover(
+  value: string | null,
+  client: Awaited<ReturnType<typeof createClient>>,
+) {
+  const path = projectCoverPath(value);
+  if (!path) return value;
+  const { data, error } = await client.storage
+    .from(PROJECT_COVER_BUCKET)
+    .createSignedUrl(path, 3600);
+  return error ? null : data.signedUrl;
+}
+
 export async function listProjects(): Promise<ProjectListItem[]> {
   await requirePermission(PERMISSIONS.VIEW_PROJECTS);
   const supabase = await createClient();
@@ -65,7 +78,11 @@ export async function listProjects(): Promise<ProjectListItem[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error("No fue posible cargar los proyectos.");
-  return (data as unknown as JoinedProject[]).map(mapListProject);
+  const projects = (data as unknown as JoinedProject[]).map(mapListProject);
+  return Promise.all(projects.map(async (project) => ({
+    ...project,
+    cover_image: await resolveProjectCover(project.cover_image, supabase),
+  })));
 }
 
 export async function getProjectForEdit(id: string): Promise<ProjectEditData | null> {
@@ -91,28 +108,45 @@ export async function getProjectForEdit(id: string): Promise<ProjectEditData | n
     ...project,
     fee: isAdmin ? joined.fee ?? null : null,
     members: mapMembers(project_members),
+    cover_image_preview_url: await resolveProjectCover(project.cover_image, supabase),
   };
 }
 
-export async function getProjectFormOptions(): Promise<ProjectFormOptions> {
+export async function getProjectFormOptions(projectId?: string): Promise<ProjectFormOptions> {
   const user = await requirePermission(PERMISSIONS.EDIT_PROJECTS);
   const supabase = await createClient();
   const canAssign = hasPermission(user.profile.role, PERMISSIONS.ASSIGN_PROJECT_MEMBERS);
+  const validProjectId = projectId && projectIdSchema.safeParse(projectId).success
+    ? projectId
+    : null;
 
-  const [clientsResult, usersResult] = await Promise.all([
+  const [clientsResult, usersResult, phasesResult] = await Promise.all([
     supabase.from("clients").select("id, name").order("name"),
     canAssign
       ? supabase.from("profiles").select("id, full_name").eq("is_active", true).order("full_name")
       : Promise.resolve({ data: [], error: null }),
+    validProjectId
+      ? supabase
+          .from("project_phases")
+          .select("id:phase_template_id, name")
+          .eq("project_id", validProjectId)
+          .eq("is_active", true)
+          .order("sort_order")
+      : supabase
+          .from("project_phase_templates")
+          .select("id, name")
+          .eq("is_active", true)
+          .order("sort_order"),
   ]);
 
-  if (clientsResult.error || usersResult.error) {
+  if (clientsResult.error || usersResult.error || phasesResult.error) {
     throw new Error("No fue posible cargar las opciones del proyecto.");
   }
 
   return {
     clients: clientsResult.data,
     users: usersResult.data,
+    phases: phasesResult.data,
   };
 }
 
@@ -157,9 +191,11 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
   }));
   const { clients, project_members, ...project } = joined;
   void clients;
+  const coverImage = await resolveProjectCover(project.cover_image, projectClient);
 
   return {
     ...project,
+    cover_image: coverImage,
     fee: isAdmin ? joined.fee ?? null : null,
     members: mapMembers(project_members),
     client: clientResult.data,

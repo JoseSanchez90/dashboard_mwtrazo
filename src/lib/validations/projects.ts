@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { PROJECT_STATUSES } from "@/types/project";
+import { isProjectCoverReference } from "@/lib/projects/cover";
 
 const optionalText = (label: string, maximum: number) =>
   z.string().trim().max(maximum, `${label} no puede superar ${maximum} caracteres.`);
@@ -30,7 +31,7 @@ export const projectFormSchema = z
     progress: z.number().int().min(0).max(100),
     fee: optionalNumber("Los honorarios", 0),
     cover_image: z.string().trim().max(1000).refine(
-      (value) => value === "" || z.url().safeParse(value).success,
+      (value) => value === "" || z.url().safeParse(value).success || isProjectCoverReference(value),
       "Ingresa una URL válida.",
     ),
     member_ids: z.array(z.uuid()).max(50),

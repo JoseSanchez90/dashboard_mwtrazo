@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppSelect } from "@/components/shared/app-select";
 import { useFormattingPreferences } from "@/components/providers/formatting-provider";
 import { formatDate, formatDateTime } from "@/lib/formatting";
@@ -30,6 +31,17 @@ import { EVENT_TYPES, EVENT_TYPE_LABELS, type CalendarEvent, type EventOptions, 
 
 const eventColors: Record<EventType, string> = { meeting: "var(--event-meeting)", site_visit: "var(--event-site-visit)", deadline: "var(--event-deadline)", delivery: "var(--event-delivery)", internal: "var(--event-internal)" };
 const emptyForm: EventFormInput = { project_id: "", client_id: "", title: "", description: "", type: "internal", start_at: "", end_at: "", all_day: false, location: "", assigned_to: "" };
+const calendarViews = [
+  { value: "dayGridMonth", label: "Mes" },
+  { value: "timeGridWeek", label: "Semana" },
+  { value: "timeGridDay", label: "Día" },
+  { value: "listMonth", label: "Agenda" },
+] as const;
+type CalendarView = (typeof calendarViews)[number]["value"];
+
+function isCalendarView(value: string): value is CalendarView {
+  return calendarViews.some((view) => view.value === value);
+}
 
 function localInput(value: string) { const date = new Date(value); const offset = date.getTimezoneOffset() * 60000; return new Date(date.getTime() - offset).toISOString().slice(0, 16); }
 function valuesFor(event?: CalendarEvent, selection?: { start: string; end: string; allDay: boolean }, fixedProjectId?: string): EventFormInput {
@@ -73,11 +85,19 @@ function EventDetailDialog({ event, open, onOpenChange, canEdit, canDelete, onEd
 
 export function CalendarWorkspace({ events, options, canCreate, canEdit, canDelete, fixedProjectId, initialCreate = false }: { events: CalendarEvent[]; options: EventOptions; canCreate: boolean; canEdit: boolean; canDelete: boolean; fixedProjectId?: string; initialCreate?: boolean }) {
   const formatting = useFormattingPreferences();
+  const calendarRef = useRef<FullCalendar>(null);
+  const [calendarView, setCalendarView] = useState<CalendarView>("dayGridMonth");
   const [selected, setSelected] = useState<CalendarEvent>(); const [detailOpen, setDetailOpen] = useState(false); const [formOpen, setFormOpen] = useState(initialCreate && canCreate); const [editing, setEditing] = useState<CalendarEvent>(); const [selection, setSelection] = useState<{ start: string; end: string; allDay: boolean }>();
   const calendarEvents = useMemo(() => events.map((event) => ({ id: event.id, title: event.title, start: event.start_at, end: event.end_at, allDay: event.all_day, backgroundColor: eventColors[event.type], borderColor: eventColors[event.type] })), [events]);
   const openNew = (value?: DateSelectArg) => { if (!canCreate) return; setEditing(undefined); setSelection(value ? { start: value.startStr, end: value.endStr, allDay: value.allDay } : undefined); setFormOpen(true); };
   const showEvent = (info: EventClickArg) => { const event = events.find((item) => item.id === info.event.id); if (event) { setSelected(event); setDetailOpen(true); } };
-  return <div className="space-y-4"><div className="flex justify-end">{canCreate && <Button onClick={() => openNew()}><CalendarPlus />Nuevo evento</Button>}</div><div className="mw-calendar overflow-hidden rounded-xl border bg-card p-3 sm:p-5"><FullCalendar plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]} locale={esLocale} firstDay={formatting.week_starts_on} initialView="dayGridMonth" headerToolbar={{ left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth" }} buttonText={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día", list: "Agenda" }} height="auto" events={calendarEvents} selectable={canCreate} select={openNew} eventClick={showEvent} nowIndicator dayMaxEvents /></div>
+  const changeCalendarView = (value: string) => {
+    if (!isCalendarView(value)) return;
+    setCalendarView(value);
+    calendarRef.current?.getApi().changeView(value);
+  };
+
+  return <div className="space-y-4"><div className="flex justify-end">{canCreate && <Button onClick={() => openNew()}><CalendarPlus />Nuevo evento</Button>}</div><div className="mw-calendar overflow-hidden rounded-xl border bg-card p-3 sm:p-5"><div className="mb-4 flex justify-end"><Tabs value={calendarView} onValueChange={changeCalendarView}><TabsList aria-label="Vista del calendario">{calendarViews.map((view) => <TabsTrigger key={view.value} value={view.value}>{view.label}</TabsTrigger>)}</TabsList></Tabs></div><FullCalendar ref={calendarRef} plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]} locale={esLocale} firstDay={formatting.week_starts_on} initialView="dayGridMonth" headerToolbar={{ left: "prev,next today", center: "title", right: "" }} buttonText={{ today: "Hoy" }} datesSet={({ view }) => { if (isCalendarView(view.type)) setCalendarView(view.type); }} height="auto" events={calendarEvents} selectable={canCreate} select={openNew} eventClick={showEvent} nowIndicator dayMaxEvents /></div>
   <EventDetailDialog event={selected} open={detailOpen} onOpenChange={setDetailOpen} canEdit={canEdit} canDelete={canDelete} onEdit={() => { setDetailOpen(false); setEditing(selected); setSelection(undefined); setFormOpen(true); }} />
   <EventFormDialog open={formOpen} onOpenChange={setFormOpen} event={editing} selection={selection} options={options} fixedProjectId={fixedProjectId} /></div>;
 }

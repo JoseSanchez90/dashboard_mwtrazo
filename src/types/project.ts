@@ -55,11 +55,13 @@ export type ProjectListItem = Omit<Project, "fee"> & {
 
 export type ProjectEditData = Project & {
   members: ProjectMember[];
+  cover_image_preview_url?: string | null;
 };
 
 export type ProjectFormOptions = {
   clients: Array<{ id: string; name: string }>;
   users: Array<{ id: string; full_name: string }>;
+  phases: Array<{ id: string; name: string }>;
 };
 
 export type ProjectPhase = {

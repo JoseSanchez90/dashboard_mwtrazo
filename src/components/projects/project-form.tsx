@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircle, Save, UsersRound } from "lucide-react";
+import { ImageIcon, Link2, LoaderCircle, Save, Sparkles, Upload, UsersRound } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -19,7 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { AppSelect } from "@/components/shared/app-select";
+import {
+  DEFAULT_PROJECT_COVER,
+  isProjectCoverReference,
+} from "@/lib/projects/cover";
 import { cn } from "@/lib/utils";
+import { validateProjectCoverFile } from "@/lib/validations/project-cover";
 import { projectFormSchema, type ProjectFormInput } from "@/lib/validations/projects";
 import {
   PROJECT_STATUSES,
@@ -27,6 +32,32 @@ import {
   type ProjectEditData,
   type ProjectFormOptions,
 } from "@/types/project";
+
+type CoverMode = "default" | "url" | "upload";
+
+function coverModeFromValue(value: string | null | undefined): CoverMode {
+  if (isProjectCoverReference(value)) return "upload";
+  return value ? "url" : "default";
+}
+
+async function uploadProjectCover(file: File) {
+  const formData = new FormData();
+  formData.set("cover", file);
+  const response = await fetch("/api/project-covers", { method: "POST", body: formData });
+  const body = await response.json() as { reference?: string; error?: string };
+  if (!response.ok || !body.reference) {
+    throw new Error(body.error ?? "No fue posible subir la portada.");
+  }
+  return body.reference;
+}
+
+async function discardUploadedCover(reference: string) {
+  await fetch("/api/project-covers", {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ reference }),
+  });
+}
 
 const emptyValues: ProjectFormInput = {
   client_id: "",
@@ -97,48 +128,116 @@ export function ProjectForm({
 }) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
+  const [coverMode, setCoverMode] = useState<CoverMode>(() => coverModeFromValue(project?.cover_image));
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverFileError, setCoverFileError] = useState("");
+  const [localCoverPreview, setLocalCoverPreview] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<ProjectFormInput>({
     resolver: zodResolver(projectFormSchema),
-    defaultValues: project ? valuesFromProject(project) : emptyValues,
+    defaultValues: project
+      ? valuesFromProject(project)
+      : { ...emptyValues, phase: options.phases[0]?.name ?? "" },
   });
   const progress = useWatch({ control, name: "progress" });
   const selectedMembers = useWatch({ control, name: "member_ids" });
+  const coverValue = useWatch({ control, name: "cover_image" });
+
+  useEffect(() => () => {
+    if (localCoverPreview?.startsWith("blob:")) URL.revokeObjectURL(localCoverPreview);
+  }, [localCoverPreview]);
+
+  function changeCoverMode(mode: CoverMode) {
+    setCoverMode(mode);
+    setCoverFile(null);
+    setCoverFileError("");
+    setLocalCoverPreview(null);
+    if (mode === "default") setValue("cover_image", "", { shouldValidate: true });
+    if (mode === "url" && isProjectCoverReference(coverValue)) {
+      setValue("cover_image", "", { shouldValidate: true });
+    }
+    if (mode === "upload" && !isProjectCoverReference(coverValue)) {
+      setValue("cover_image", "", { shouldValidate: true });
+    }
+  }
+
+  function selectCoverFile(file: File | null) {
+    setCoverFileError("");
+    setCoverFile(file);
+    setLocalCoverPreview(null);
+    if (!file) return;
+    const error = validateProjectCoverFile(file);
+    if (error) {
+      setCoverFileError(error);
+      setCoverFile(null);
+      return;
+    }
+    setLocalCoverPreview(URL.createObjectURL(file));
+  }
 
   const submit = handleSubmit((values) => {
     setServerError("");
     startTransition(async () => {
-      const result = project
-        ? await updateProjectAction(project.id, values)
-        : await createProjectAction(values);
+      let uploadedReference: string | null = null;
+      let coverImage = coverMode === "url" ? values.cover_image : "";
 
-      if (!result.ok) {
-        setServerError(result.error);
-        toast.error(result.error);
-        return;
+      try {
+        if (coverMode === "upload") {
+          if (coverFile) {
+            uploadedReference = await uploadProjectCover(coverFile);
+            coverImage = uploadedReference;
+          } else if (isProjectCoverReference(values.cover_image)) {
+            coverImage = values.cover_image;
+          }
+        }
+
+        const result = project
+          ? await updateProjectAction(project.id, { ...values, cover_image: coverImage })
+          : await createProjectAction({ ...values, cover_image: coverImage });
+
+        if (!result.ok) {
+          if (uploadedReference) await discardUploadedCover(uploadedReference);
+          setServerError(result.error);
+          toast.error(result.error);
+          return;
+        }
+
+        toast.success(project ? "Proyecto actualizado." : "Proyecto creado.");
+        router.push("/proyectos");
+        router.refresh();
+      } catch (error) {
+        if (uploadedReference) await discardUploadedCover(uploadedReference);
+        const message = error instanceof Error ? error.message : "No fue posible guardar el proyecto.";
+        setServerError(message);
+        toast.error(message);
       }
-
-      toast.success(project ? "Proyecto actualizado." : "Proyecto creado.");
-      router.push("/proyectos");
-      router.refresh();
     });
   });
 
   const clientName = options.clients.find((client) => client.id === project?.client_id)?.name;
+  const phaseOptions = project?.phase && !options.phases.some((phase) => phase.name === project.phase)
+    ? [{ id: `historical-${project.id}`, name: project.phase }, ...options.phases]
+    : options.phases;
+  const coverPreview = localCoverPreview
+    ?? (coverMode === "upload" ? project?.cover_image_preview_url : null)
+    ?? (coverMode === "url" && coverValue ? coverValue : DEFAULT_PROJECT_COVER);
 
   return (
     <form onSubmit={submit} className={modal ? "space-y-5" : "mt-8 space-y-8"} noValidate>
       <section className={cn("rounded-xl border bg-card", modal && "border-0 bg-transparent")}>
-        <div className={cn("border-b px-5 py-4", modal && "px-0 pt-1")}>
-          <h2 className="font-semibold">Información general</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Identificación, cliente y alcance principal del proyecto.</p>
-        </div>
-        <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
+        {!modal && (
+          <div className="border-b px-5 py-4">
+            <h2 className="font-semibold">Información general</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Identificación, cliente y alcance principal del proyecto.</p>
+          </div>
+        )}
+        <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0 pt-1")}>
           <Field label="Nombre *" error={errors.name?.message}>
             <Input autoFocus aria-invalid={Boolean(errors.name)} {...register("name")} />
           </Field>
@@ -168,19 +267,71 @@ export function ProjectForm({
           <Field label="Descripción" error={errors.description?.message}>
             <Textarea {...register("description")} />
           </Field>
-          <Field label="URL de portada" error={errors.cover_image?.message}>
-            <Input type="url"  placeholder="https://…" {...register("cover_image")} />
-          </Field>
+          <div className="space-y-3 md:col-span-2">
+            <div>
+              <Label className="text-sm font-medium">Portada del proyecto</Label>
+              <p className="mt-1 text-xs text-muted-foreground">Elige una imagen propia, usa una URL o conserva la portada predeterminada de MWTRAZO.</p>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-[14rem_minmax(0,1fr)]">
+              <div
+                className="aspect-[16/9] overflow-hidden rounded-lg border bg-muted bg-cover bg-center"
+                style={{ backgroundImage: `linear-gradient(to top, rgb(0 0 0 / 0.24), transparent 65%), url(${JSON.stringify(coverPreview)})` }}
+                role="img"
+                aria-label="Vista previa de la portada del proyecto"
+              />
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <Button type="button" variant={coverMode === "default" ? "secondary" : "outline"} onClick={() => changeCoverMode("default")} aria-pressed={coverMode === "default"}><Sparkles />Predeterminada</Button>
+                  <Button type="button" variant={coverMode === "url" ? "secondary" : "outline"} onClick={() => changeCoverMode("url")} aria-pressed={coverMode === "url"}><Link2 />Usar URL</Button>
+                  <Button type="button" variant={coverMode === "upload" ? "secondary" : "outline"} onClick={() => changeCoverMode("upload")} aria-pressed={coverMode === "upload"}><Upload />Subir imagen</Button>
+                </div>
+
+                {coverMode === "url" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="project-cover-url">URL de la portada</Label>
+                    <Input id="project-cover-url" type="url" placeholder="https://…" aria-invalid={Boolean(errors.cover_image)} {...register("cover_image")} />
+                  </div>
+                ) : (
+                  <Input type="hidden" {...register("cover_image")} />
+                )}
+
+                {coverMode === "upload" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="project-cover-file">Archivo de imagen</Label>
+                    <Input id="project-cover-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => selectCoverFile(event.target.files?.[0] ?? null)} />
+                    <p className="text-xs text-muted-foreground">JPG, PNG o WebP, máximo 5 MB. Se guardará de forma privada.</p>
+                  </div>
+                )}
+                {coverMode === "default" && <p className="flex items-center gap-2 text-sm text-muted-foreground"><ImageIcon className="size-4 text-brand" />Se utilizará la portada arquitectónica predeterminada.</p>}
+                {(errors.cover_image?.message || coverFileError) && <p className="text-xs text-destructive">{coverFileError || errors.cover_image?.message}</p>}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <section className={cn("rounded-xl border bg-card", modal && "border-0 bg-transparent")}>
         <div className={cn("border-b px-5 py-4", modal && "px-0")}>
-          <h2 className="font-semibold">Planificación y ubicación</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Fechas, fase, avance y datos del predio.</p>
+          <h2 className={cn("font-semibold", modal && "text-xs tracking-wide text-muted-foreground uppercase")}>Planificación y ubicación</h2>
+          {!modal && <p className="mt-1 text-sm text-muted-foreground">Fechas, fase, avance y datos del predio.</p>}
         </div>
         <div className={cn("grid gap-5 p-5 md:grid-cols-2 lg:grid-cols-3", modal && "px-0")}>
-          <Field label="Fase" error={errors.phase?.message}><Input {...register("phase")} /></Field>
+          <Field label="Fase" error={errors.phase?.message}>
+            <Controller
+              name="phase"
+              control={control}
+              render={({ field }) => (
+                <AppSelect
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  emptyLabel="Seleccionar fase"
+                  options={phaseOptions.map((phase) => ({ value: phase.name, label: phase.name }))}
+                  className="w-full"
+                  ariaLabel="Fase del proyecto"
+                />
+              )}
+            />
+          </Field>
           <Field label="Fecha de inicio" error={errors.start_date?.message}><Input type="date"  {...register("start_date")} /></Field>
           <Field label="Fecha de entrega" error={errors.due_date?.message}><Input type="date"  {...register("due_date")} /></Field>
           <Field label="Dirección" error={errors.address?.message}><Input {...register("address")} /></Field>
@@ -200,8 +351,8 @@ export function ProjectForm({
       {canAdminister && (
         <section className={cn("rounded-xl border bg-card", modal && "border-0 bg-transparent")}>
           <div className={cn("flex items-center gap-3 border-b px-5 py-4", modal && "px-0")}>
-            <UsersRound className="size-5 text-brand" />
-            <div><h2 className="font-semibold">Equipo del proyecto</h2><p className="mt-1 text-sm text-muted-foreground">Asigna integrantes y un responsable principal opcional.</p></div>
+            <UsersRound className={cn("size-5 text-brand", modal && "size-4")} />
+            <div><h2 className={cn("font-semibold", modal && "text-xs tracking-wide text-muted-foreground uppercase")}>Equipo del proyecto</h2>{!modal && <p className="mt-1 text-sm text-muted-foreground">Asigna integrantes y un responsable principal opcional.</p>}</div>
           </div>
           <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
             <fieldset className="space-y-3">

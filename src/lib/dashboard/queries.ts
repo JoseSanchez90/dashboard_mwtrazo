@@ -4,7 +4,6 @@ import { requireAuthenticatedUser } from "@/lib/auth/session";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { listActivity } from "@/lib/activity/queries";
 import { PROJECT_STATUSES, type ProjectStatus } from "@/types/project";
 import type { DashboardData, DashboardEvent, DashboardFile, DashboardProject, DashboardTask } from "@/types/dashboard";
 
@@ -29,7 +28,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     createAdminClient().from("projects").select("fee"),
     supabase.from("project_payments").select("amount, status"),
   ]) : Promise.resolve(null);
-  const [projectsResult, tasksResult, eventsResult, filesResult, finance, activityLogs] = await Promise.all([projectsQuery, tasksQuery, eventsQuery, filesQuery, financePromise, listActivity(undefined, 6)]);
+  const [projectsResult, tasksResult, eventsResult, filesResult, finance] = await Promise.all([projectsQuery, tasksQuery, eventsQuery, filesQuery, financePromise]);
   if (projectsResult.error || tasksResult.error || eventsResult.error || filesResult.error || (finance && (finance[0].error || finance[1].error))) throw new Error("No fue posible cargar el dashboard.");
 
   const projects = (projectsResult.data as unknown as ProjectRow[]).map(({ clients, project_members, ...project }) => { void project_members; return { ...project, client_name: clients?.name ?? "Cliente no disponible" }; });
@@ -38,9 +37,8 @@ export async function getDashboardData(): Promise<DashboardData> {
   const files = (filesResult.data as unknown as FileRow[]).map(({ projects, ...file }) => ({ ...file, project_name: projects?.name ?? "Proyecto no disponible" }));
   const today = new Date().toISOString().slice(0, 10); const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString(); const activeProjects = projects.filter((project) => project.status === "active");
   const pendingCollection = finance ? Math.max((finance[0].data ?? []).reduce((sum, project) => sum + (project.fee ?? 0), 0) - (finance[1].data ?? []).filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amount, 0), 0) : null;
-  const activity = activityLogs.map((item) => ({ id: item.id, label: `${item.user_name} ${item.label}`, detail: item.entity_label, occurred_at: item.created_at, href: item.href }));
   return {
-    projects, tasks, events, files, activity,
+    projects, tasks, events, files,
     kpis: { activeProjects: activeProjects.length, pendingTasks: tasks.length, overdueTasks: tasks.filter((task) => task.due_date && task.due_date < today).length, upcomingEvents: events.filter((event) => event.start_at <= weekEnd).length, upcomingDeliveries: projects.filter((project) => project.due_date && project.due_date >= today && project.status !== "completed" && project.status !== "cancelled").length, pendingCollection },
     projectStatusCounts: PROJECT_STATUSES.map((status) => ({ status, count: projects.filter((project) => project.status === status).length })).filter((item) => item.count > 0) as Array<{ status: ProjectStatus; count: number }>,
   };

@@ -18,13 +18,15 @@ export function AppSelect({ value, onValueChange, options, emptyLabel, placehold
   const items = emptyLabel
     ? [{ value: null, label: emptyLabel }, ...options]
     : options;
+  const selectedLabel = options.find((option) => option.value === value)?.label
+    ?? (value ? undefined : emptyLabel);
 
   return (
     <Select items={items} value={value || null} onValueChange={(next) => onValueChange(next === null ? "" : String(next))} disabled={disabled}>
-      <SelectTrigger className={className} size={size} aria-label={ariaLabel}>
+      <SelectTrigger className={className} size={size} aria-label={ariaLabel} title={selectedLabel}>
         <SelectValue placeholder={placeholder ?? emptyLabel ?? "Seleccionar"} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent align="start" alignItemWithTrigger={false}>
         {emptyLabel && <SelectItem value={null}>{emptyLabel}</SelectItem>}
         {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
       </SelectContent>

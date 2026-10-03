@@ -70,6 +70,12 @@
 
 .mw-calendar .fc .fc-toolbar-title { font-size: 1.05rem; font-weight: 600; }
 .mw-calendar .fc .fc-button { border-radius: 0.5rem; box-shadow: none; font-size: 0.78rem; text-transform: none; }
+.mw-calendar .fc .fc-toolbar-chunk:first-child .fc-button-group { gap: 0.375rem; }
+.mw-calendar .fc .fc-toolbar-chunk:first-child .fc-button-group > .fc-button {
+  margin-left: 0;
+  border-radius: 0.5rem;
+}
+.mw-calendar .fc .fc-toolbar-chunk:first-child .fc-today-button { margin-left: 0.5rem; }
 .mw-calendar .fc .fc-col-header-cell-cushion,
 .mw-calendar .fc .fc-daygrid-day-number { padding: 0.5rem; }
 .mw-calendar .fc .fc-event { border-radius: 0.35rem; padding: 1px 3px; cursor: pointer; }

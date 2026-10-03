@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { requirePermission } from "@/lib/permissions/guards";
+import { PROJECT_COVER_BUCKET, projectCoverPath } from "@/lib/projects/cover";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   optionalNumberValue,
@@ -58,6 +60,76 @@ function projectError(message: string) {
   return "No fue posible guardar el proyecto.";
 }
 
+async function removeStoredProjectCover(reference: string | null | undefined) {
+  const path = projectCoverPath(reference);
+  if (!path) return;
+  await createAdminClient().storage.from(PROJECT_COVER_BUCKET).remove([path]);
+}
+
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+async function isAllowedProjectPhase(
+  supabase: ServerSupabaseClient,
+  phase: string,
+  projectId?: string,
+  historicalPhase?: string | null,
+) {
+  if (!phase || phase === historicalPhase) return true;
+  const result = projectId
+    ? await supabase
+        .from("project_phases")
+        .select("name")
+        .eq("project_id", projectId)
+        .eq("is_active", true)
+        .eq("name", phase)
+        .maybeSingle()
+    : await supabase
+        .from("project_phase_templates")
+        .select("name")
+        .eq("is_active", true)
+        .eq("name", phase)
+        .maybeSingle();
+  return !result.error && Boolean(result.data);
+}
+
+async function syncProjectCurrentPhase(
+  supabase: ServerSupabaseClient,
+  projectId: string,
+  phase: string,
+) {
+  if (!phase) {
+    return supabase
+      .from("project_phases")
+      .update({ is_current: false })
+      .eq("project_id", projectId)
+      .eq("is_current", true);
+  }
+
+  const { data: selectedPhase, error: phaseError } = await supabase
+    .from("project_phases")
+    .select("phase_template_id")
+    .eq("project_id", projectId)
+    .eq("is_active", true)
+    .eq("name", phase)
+    .maybeSingle();
+  if (phaseError || !selectedPhase) {
+    return { error: phaseError ?? new Error("La fase no pertenece al proyecto.") };
+  }
+
+  const { error: clearError } = await supabase
+    .from("project_phases")
+    .update({ is_current: false })
+    .eq("project_id", projectId)
+    .eq("is_current", true);
+  if (clearError) return { error: clearError };
+
+  return supabase
+    .from("project_phases")
+    .update({ is_current: true })
+    .eq("project_id", projectId)
+    .eq("phase_template_id", selectedPhase.phase_template_id);
+}
+
 async function replaceMembers(
   projectId: string,
   memberIds: string[],
@@ -77,15 +149,26 @@ export async function createProjectAction(
   const user = await requirePermission(PERMISSIONS.CREATE_PROJECTS);
   const parsed = projectFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Revisa los datos ingresados." };
+  const coverPath = projectCoverPath(parsed.data.cover_image);
+  if (coverPath && !coverPath.startsWith(`${user.id}/`)) {
+    return { ok: false, error: "La portada seleccionada no es válida." };
+  }
 
   const supabase = await createClient();
+  if (!(await isAllowedProjectPhase(supabase, parsed.data.phase))) {
+    await removeStoredProjectCover(parsed.data.cover_image);
+    return { ok: false, error: "Selecciona una fase válida." };
+  }
   const { data, error } = await supabase
     .from("projects")
     .insert({ ...adminPayload(parsed.data), created_by: user.id })
     .select("id")
     .single();
 
-  if (error || !data) return { ok: false, error: projectError(error?.message ?? "") };
+  if (error || !data) {
+    await removeStoredProjectCover(parsed.data.cover_image);
+    return { ok: false, error: projectError(error?.message ?? "") };
+  }
 
   const { error: memberError } = await replaceMembers(
     data.id,
@@ -94,7 +177,19 @@ export async function createProjectAction(
   );
   if (memberError) {
     await supabase.from("projects").delete().eq("id", data.id);
+    await removeStoredProjectCover(parsed.data.cover_image);
     return { ok: false, error: "No fue posible asignar los miembros del proyecto." };
+  }
+
+  const { error: phaseError } = await syncProjectCurrentPhase(
+    supabase,
+    data.id,
+    parsed.data.phase,
+  );
+  if (phaseError) {
+    await supabase.from("projects").delete().eq("id", data.id);
+    await removeStoredProjectCover(parsed.data.cover_image);
+    return { ok: false, error: "No fue posible establecer la fase inicial del proyecto." };
   }
 
   revalidatePath("/proyectos");
@@ -119,6 +214,27 @@ export async function updateProjectAction(
     PERMISSIONS.ASSIGN_PROJECT_MEMBERS,
   );
   const supabase = await createClient();
+  const { data: currentProject } = await supabase
+    .from("projects")
+    .select("cover_image, phase")
+    .eq("id", parsedId.data)
+    .maybeSingle();
+  const newCoverPath = projectCoverPath(parsedInput.data.cover_image);
+  if (
+    newCoverPath
+    && parsedInput.data.cover_image !== currentProject?.cover_image
+    && !newCoverPath.startsWith(`${user.id}/`)
+  ) {
+    return { ok: false, error: "La portada seleccionada no es válida." };
+  }
+  if (!(await isAllowedProjectPhase(
+    supabase,
+    parsedInput.data.phase,
+    parsedId.data,
+    currentProject?.phase,
+  ))) {
+    return { ok: false, error: "Selecciona una fase válida." };
+  }
   const payload = canAdminister
     ? adminPayload(parsedInput.data)
     : operationalPayload(parsedInput.data);
@@ -131,6 +247,21 @@ export async function updateProjectAction(
 
   if (error) return { ok: false, error: projectError(error.message) };
   if (!data) return { ok: false, error: "El proyecto ya no existe." };
+
+  if (currentProject?.cover_image !== parsedInput.data.cover_image) {
+    await removeStoredProjectCover(currentProject?.cover_image);
+  }
+
+  if (currentProject?.phase !== parsedInput.data.phase) {
+    const { error: phaseError } = await syncProjectCurrentPhase(
+      supabase,
+      parsedId.data,
+      parsedInput.data.phase,
+    );
+    if (phaseError) {
+      return { ok: false, error: "El proyecto se actualizó, pero no fue posible establecer su fase actual." };
+    }
+  }
 
   if (canAdminister) {
     const { error: memberError } = await replaceMembers(
@@ -154,6 +285,11 @@ export async function deleteProjectAction(id: string): Promise<ProjectActionResu
   if (!parsed.success) return { ok: false, error: "El proyecto no es válido." };
 
   const supabase = await createClient();
+  const { data: currentProject } = await supabase
+    .from("projects")
+    .select("cover_image")
+    .eq("id", parsed.data)
+    .maybeSingle();
   const { data, error } = await supabase
     .from("projects")
     .delete()
@@ -165,6 +301,8 @@ export async function deleteProjectAction(id: string): Promise<ProjectActionResu
     return { ok: false, error: "No se puede eliminar el proyecto porque tiene información relacionada." };
   }
   if (!data) return { ok: false, error: "El proyecto no existe o no puedes eliminarlo." };
+
+  await removeStoredProjectCover(currentProject?.cover_image);
 
   revalidatePath("/proyectos");
   return { ok: true, id: data.id };

@@ -7,9 +7,8 @@ export type DashboardProject = { id: string; name: string; code: string; status:
 export type DashboardTask = { id: string; title: string; status: TaskStatus; priority: TaskPriority; due_date: string | null; assigned_to: string | null; updated_at: string; project_name: string | null };
 export type DashboardEvent = { id: string; title: string; type: EventType; start_at: string; assigned_to: string | null; created_at: string; project_name: string | null };
 export type DashboardFile = { id: string; file_name: string; category: ProjectFileCategory; project_id: string; created_at: string; project_name: string };
-export type DashboardActivity = { id: string; label: string; detail: string; occurred_at: string; href: string };
 export type DashboardData = {
-  projects: DashboardProject[]; tasks: DashboardTask[]; events: DashboardEvent[]; files: DashboardFile[]; activity: DashboardActivity[];
+  projects: DashboardProject[]; tasks: DashboardTask[]; events: DashboardEvent[]; files: DashboardFile[];
   kpis: { activeProjects: number; pendingTasks: number; overdueTasks: number; upcomingEvents: number; upcomingDeliveries: number; pendingCollection: number | null };
   projectStatusCounts: Array<{ status: ProjectStatus; count: number }>;
 };

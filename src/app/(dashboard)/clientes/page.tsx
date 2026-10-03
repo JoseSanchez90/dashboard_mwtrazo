@@ -12,7 +12,10 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 export const metadata: Metadata = { title: "Clientes" };
 
 export default async function ClientsPage() {
-  const [clients, user] = await Promise.all([listClients(), requireAuthenticatedUser()]);
+  const [clients, user] = await Promise.all([
+    listClients(),
+    requireAuthenticatedUser(),
+  ]);
 
   return (
     <div>
@@ -20,8 +23,12 @@ export default async function ClientsPage() {
         title="Clientes"
         description="Organiza los datos de contacto y la información comercial del estudio."
         actions={
-          <Link href="/clientes/nuevo" className={buttonVariants()}>
-            <Plus />Nuevo cliente
+          <Link
+            href="/clientes/nuevo"
+            className={`${buttonVariants()} text-white`}
+          >
+            <Plus />
+            Nuevo cliente
           </Link>
         }
       />

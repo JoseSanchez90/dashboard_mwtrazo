@@ -13,7 +13,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const [project, options, user] = await Promise.all([
     getProjectForEdit(id),
-    getProjectFormOptions(),
+    getProjectFormOptions(id),
     requireAuthenticatedUser(),
   ]);
   if (!project) notFound();

@@ -51,6 +51,7 @@ import { AppSelect } from "@/components/shared/app-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFormattingPreferences } from "@/components/providers/formatting-provider";
 import { formatDate } from "@/lib/formatting";
+import { projectCoverBackground } from "@/lib/projects/cover";
 import {
   PROJECT_STATUSES,
   PROJECT_STATUS_LABELS,
@@ -97,7 +98,7 @@ function ProjectActions({ project, canDelete }: { project: ProjectListItem; canD
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<button type="button" className={buttonVariants({ variant: "ghost", size: "icon-sm" })} aria-label={`Acciones para ${project.name}`} />}>
+        <DropdownMenuTrigger render={<button type="button" className={buttonVariants({ variant: "default", size: "icon-sm", className: "text-white" })} aria-label={`Acciones para ${project.name}`} />}>
           <MoreHorizontal />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -137,9 +138,8 @@ function ProjectCard({ project, canDelete }: { project: ProjectListItem; canDele
     <article className="group overflow-hidden rounded-xl border bg-card transition-colors hover:border-foreground/20">
       <div
         className="relative aspect-[16/9] bg-muted bg-cover bg-center"
-        style={project.cover_image ? { backgroundImage: `linear-gradient(to top, rgb(0 0 0 / 0.28), transparent 55%), url(${JSON.stringify(project.cover_image)})` } : undefined}
+        style={{ backgroundImage: projectCoverBackground(project.cover_image) }}
       >
-        {!project.cover_image && <div className="absolute inset-0 bg-[linear-gradient(135deg,var(--muted),var(--background))]" />}
         <div className="absolute top-3 right-3 rounded-lg bg-background/90 backdrop-blur"><ProjectActions project={project} canDelete={canDelete} /></div>
         <span className="absolute bottom-3 left-3 rounded-md bg-background/90 px-2 py-1 font-mono text-xs font-medium backdrop-blur">{project.code}</span>
       </div>
@@ -199,9 +199,9 @@ export function ProjectsExplorer({ projects, canCreate, canDelete }: { projects:
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="relative min-w-0 flex-1 xl:max-w-md"><Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, código o cliente…" aria-label="Buscar proyectos" className="pl-9" /></div>
         <div className="grid gap-2 sm:grid-cols-3 xl:flex">
-          <AppSelect ariaLabel="Filtrar proyectos por estado" value={status} onValueChange={setStatus} emptyLabel="Todos los estados" options={PROJECT_STATUSES.map((item) => ({ value: item, label: PROJECT_STATUS_LABELS[item] }))} />
-          <AppSelect ariaLabel="Filtrar proyectos por cliente" value={clientId} onValueChange={setClientId} emptyLabel="Todos los clientes" options={clients.map(([id, name]) => ({ value: id, label: name }))} />
-          <AppSelect ariaLabel="Filtrar proyectos por responsable" value={userId} onValueChange={setUserId} emptyLabel="Todos los responsables" options={users.map(([id, name]) => ({ value: id, label: name }))} />
+          <AppSelect ariaLabel="Filtrar proyectos por estado" value={status} onValueChange={setStatus} emptyLabel="Todos los estados" options={PROJECT_STATUSES.map((item) => ({ value: item, label: PROJECT_STATUS_LABELS[item] }))} className="w-full xl:w-fit xl:min-w-40" />
+          <AppSelect ariaLabel="Filtrar proyectos por cliente" value={clientId} onValueChange={setClientId} emptyLabel="Todos los clientes" options={clients.map(([id, name]) => ({ value: id, label: name }))} className="w-full xl:w-fit xl:min-w-40" />
+          <AppSelect ariaLabel="Filtrar proyectos por responsable" value={userId} onValueChange={setUserId} emptyLabel="Todos los responsables" options={users.map(([id, name]) => ({ value: id, label: name }))} className="w-full xl:w-fit xl:min-w-48" />
         </div>
         <div className="flex rounded-lg border p-1"><Button variant={view === "grid" ? "secondary" : "ghost"} size="icon-sm" onClick={() => setView("grid")} aria-label="Vista grid"><Grid2X2 /></Button><Button variant={view === "list" ? "secondary" : "ghost"} size="icon-sm" onClick={() => setView("list")} aria-label="Vista lista"><List /></Button></div>
       </div>
