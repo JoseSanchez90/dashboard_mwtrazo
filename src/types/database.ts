@@ -55,8 +55,8 @@ export type Database = {
         Relationships: [{ foreignKeyName: "project_expenses_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] }, { foreignKeyName: "project_expenses_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }];
       };
       project_files: {
-        Row: { id: string; project_id: string; uploaded_by: string; file_name: string; file_path: string; file_type: string; file_size: number; category: ProjectFileCategory; created_at: string };
-        Insert: { id?: string; project_id: string; uploaded_by: string; file_name: string; file_path: string; file_type: string; file_size: number; category?: ProjectFileCategory; created_at?: string };
+        Row: { id: string; project_id: string; uploaded_by: string; file_name: string; file_path: string; file_type: string; file_size: number; stored_size: number; compression: "none" | "gzip"; category: ProjectFileCategory; created_at: string };
+        Insert: { id?: string; project_id: string; uploaded_by: string; file_name: string; file_path: string; file_type: string; file_size: number; stored_size: number; compression?: "none" | "gzip"; category?: ProjectFileCategory; created_at?: string };
         Update: Record<string, never>;
         Relationships: [
           { foreignKeyName: "project_files_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] },

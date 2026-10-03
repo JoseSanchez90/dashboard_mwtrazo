@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { ProjectFile, ProjectFileOptions } from "@/types/project-file";
 
 type FileRow = Omit<ProjectFile, "project_name" | "uploader_name"> & { projects: { name: string } | null; profiles: { full_name: string } | null };
-const columns = "id, project_id, uploaded_by, file_name, file_path, file_type, file_size, category, created_at, projects!project_files_project_id_fkey(name), profiles!project_files_uploaded_by_fkey(full_name)" as const;
+const columns = "id, project_id, uploaded_by, file_name, file_path, file_type, file_size, stored_size, compression, category, created_at, projects!project_files_project_id_fkey(name), profiles!project_files_uploaded_by_fkey(full_name)" as const;
 
 export async function listProjectFiles(projectId?: string): Promise<ProjectFile[]> {
   await requirePermission(PERMISSIONS.VIEW_PROJECT_FILES);

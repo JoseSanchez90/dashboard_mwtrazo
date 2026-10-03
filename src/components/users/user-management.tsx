@@ -325,23 +325,16 @@ function EditUserButton({ user }: { user: ManagedUser }) {
   );
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
-}
-
 export function UsersTable({ users }: { users: ManagedUser[] }) {
   return (
     <div className="mt-8 overflow-hidden rounded-xl border bg-card">
-        <Table className="min-w-[760px]">
+        <Table className="min-w-[640px]">
           <TableHeader className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             <TableRow>
               <TableHead className="px-4">Nombre</TableHead>
               <TableHead className="px-4">Correo</TableHead>
               <TableHead className="px-4">Rol</TableHead>
               <TableHead className="px-4">Estado</TableHead>
-              <TableHead className="px-4">Creación</TableHead>
               <TableHead className="px-4 text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -377,9 +370,6 @@ export function UsersTable({ users }: { users: ManagedUser[] }) {
                       </>
                     )}
                   </span>
-                </TableCell>
-                <TableCell className="px-4 text-muted-foreground">
-                  {formatDate(user.created_at)}
                 </TableCell>
                 <TableCell className="px-4 text-right">
                   <EditUserButton user={user} />

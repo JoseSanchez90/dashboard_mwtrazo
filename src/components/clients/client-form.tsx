@@ -62,7 +62,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <Label className="block space-y-2 text-sm font-medium">
+    <Label className="flex flex-col items-stretch gap-2 text-sm font-medium">
       <span>{label}</span>
       {children}
       {error && <span className="block text-xs font-normal text-destructive">{error}</span>}
@@ -112,16 +112,16 @@ export function ClientForm({ client, modal = false }: { client?: Client; modal?:
         </div>
         <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
           <Field label="Nombre *" error={errors.name?.message}>
-            <Input className="mt-2" autoFocus aria-invalid={Boolean(errors.name)} {...register("name")} />
+            <Input autoFocus aria-invalid={Boolean(errors.name)} {...register("name")} />
           </Field>
           <Field label="Empresa" error={errors.company?.message}>
-            <Input className="mt-2" aria-invalid={Boolean(errors.company)} {...register("company")} />
+            <Input aria-invalid={Boolean(errors.company)} {...register("company")} />
           </Field>
           <Field label="Correo electrónico" error={errors.email?.message}>
-            <Input type="email" className="mt-2" aria-invalid={Boolean(errors.email)} {...register("email")} />
+            <Input type="email"  aria-invalid={Boolean(errors.email)} {...register("email")} />
           </Field>
           <Field label="Teléfono" error={errors.phone?.message}>
-            <Input type="tel" className="mt-2" aria-invalid={Boolean(errors.phone)} {...register("phone")} />
+            <Input type="tel"  aria-invalid={Boolean(errors.phone)} {...register("phone")} />
           </Field>
           <Field label="Tipo de documento" error={errors.document_type?.message}>
             <Controller
@@ -133,14 +133,14 @@ export function ClientForm({ client, modal = false }: { client?: Client; modal?:
                   onValueChange={field.onChange}
                   emptyLabel="Seleccionar tipo de documento"
                   options={CLIENT_DOCUMENT_TYPES}
-                  className="mt-2 w-full"
+                  className="w-full"
                   ariaLabel="Tipo de documento"
                 />
               )}
             />
           </Field>
           <Field label="Número de documento" error={errors.document_number?.message}>
-            <Input className="mt-2" aria-invalid={Boolean(errors.document_number)} {...register("document_number")} />
+            <Input aria-invalid={Boolean(errors.document_number)} {...register("document_number")} />
           </Field>
         </div>
       </section>
@@ -152,17 +152,16 @@ export function ClientForm({ client, modal = false }: { client?: Client; modal?:
         </div>
         <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
           <Field label="Dirección" error={errors.address?.message}>
-            <Input className="mt-2" aria-invalid={Boolean(errors.address)} {...register("address")} />
+            <Input aria-invalid={Boolean(errors.address)} {...register("address")} />
           </Field>
           <Field label="Distrito" error={errors.district?.message}>
-            <Input className="mt-2" aria-invalid={Boolean(errors.district)} {...register("district")} />
+            <Input aria-invalid={Boolean(errors.district)} {...register("district")} />
           </Field>
           <Field label="Ciudad" error={errors.city?.message}>
-            <Input className="mt-2" aria-invalid={Boolean(errors.city)} {...register("city")} />
+            <Input aria-invalid={Boolean(errors.city)} {...register("city")} />
           </Field>
           <Field label="Notas" error={errors.notes?.message}>
             <Textarea
-              className="mt-2"
               aria-invalid={Boolean(errors.notes)}
               {...register("notes")}
             />

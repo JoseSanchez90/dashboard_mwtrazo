@@ -76,7 +76,7 @@ function valuesFromProject(project: ProjectEditData): ProjectFormInput {
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
-    <Label className="block space-y-2 text-sm font-medium">
+    <Label className="flex flex-col items-stretch gap-2 text-sm font-medium">
       <span>{label}</span>
       {children}
       {error && <span className="block text-xs font-normal text-destructive">{error}</span>}
@@ -140,36 +140,36 @@ export function ProjectForm({
         </div>
         <div className={cn("grid gap-5 p-5 md:grid-cols-2", modal && "px-0")}>
           <Field label="Nombre *" error={errors.name?.message}>
-            <Input className="mt-2" autoFocus aria-invalid={Boolean(errors.name)} {...register("name")} />
+            <Input autoFocus aria-invalid={Boolean(errors.name)} {...register("name")} />
           </Field>
           <Field label="Código *" error={errors.code?.message}>
             {canAdminister ? (
-              <Input className="mt-2 uppercase" aria-invalid={Boolean(errors.code)} {...register("code")} />
+              <Input className="uppercase" aria-invalid={Boolean(errors.code)} {...register("code")} />
             ) : (
-              <><Input type="hidden" {...register("code")} /><div className="mt-2 flex h-8 items-center rounded-lg border bg-muted/40 px-2.5 text-sm">{project?.code}</div></>
+              <><Input type="hidden" {...register("code")} /><div className="flex h-8 items-center rounded-lg border bg-muted/40 px-2.5 text-sm">{project?.code}</div></>
             )}
           </Field>
           <Field label="Cliente *" error={errors.client_id?.message}>
             {canAdminister ? (
-              <Controller name="client_id" control={control} render={({ field }) => <AppSelect value={field.value} onValueChange={field.onChange} emptyLabel="Seleccionar cliente" options={options.clients.map((client) => ({ value: client.id, label: client.name }))} className="mt-2 w-full" />} />
+              <Controller name="client_id" control={control} render={({ field }) => <AppSelect value={field.value} onValueChange={field.onChange} emptyLabel="Seleccionar cliente" options={options.clients.map((client) => ({ value: client.id, label: client.name }))} className="w-full" />} />
             ) : (
-              <><Input type="hidden" {...register("client_id")} /><div className="mt-2 flex h-8 items-center rounded-lg border bg-muted/40 px-2.5 text-sm">{clientName ?? "Cliente"}</div></>
+              <><Input type="hidden" {...register("client_id")} /><div className="flex h-8 items-center rounded-lg border bg-muted/40 px-2.5 text-sm">{clientName ?? "Cliente"}</div></>
             )}
           </Field>
           <Field label="Estado" error={errors.status?.message}>
-            <Controller name="status" control={control} render={({ field }) => <AppSelect value={field.value} onValueChange={field.onChange} options={PROJECT_STATUSES.map((status) => ({ value: status, label: PROJECT_STATUS_LABELS[status] }))} className="mt-2 w-full" />} />
+            <Controller name="status" control={control} render={({ field }) => <AppSelect value={field.value} onValueChange={field.onChange} options={PROJECT_STATUSES.map((status) => ({ value: status, label: PROJECT_STATUS_LABELS[status] }))} className="w-full" />} />
           </Field>
           <Field label="Tipo de proyecto" error={errors.project_type?.message}>
-            <Input className="mt-2" placeholder="Residencial, comercial…" {...register("project_type")} />
+            <Input placeholder="Residencial, comercial…" {...register("project_type")} />
           </Field>
           <Field label="Tipo de servicio" error={errors.service_type?.message}>
-            <Input className="mt-2" placeholder="Diseño, supervisión…" {...register("service_type")} />
+            <Input placeholder="Diseño, supervisión…" {...register("service_type")} />
           </Field>
           <Field label="Descripción" error={errors.description?.message}>
-            <Textarea className="mt-2" {...register("description")} />
+            <Textarea {...register("description")} />
           </Field>
           <Field label="URL de portada" error={errors.cover_image?.message}>
-            <Input type="url" className="mt-2" placeholder="https://…" {...register("cover_image")} />
+            <Input type="url"  placeholder="https://…" {...register("cover_image")} />
           </Field>
         </div>
       </section>
@@ -180,15 +180,15 @@ export function ProjectForm({
           <p className="mt-1 text-sm text-muted-foreground">Fechas, fase, avance y datos del predio.</p>
         </div>
         <div className={cn("grid gap-5 p-5 md:grid-cols-2 lg:grid-cols-3", modal && "px-0")}>
-          <Field label="Fase" error={errors.phase?.message}><Input className="mt-2" {...register("phase")} /></Field>
-          <Field label="Fecha de inicio" error={errors.start_date?.message}><Input type="date" className="mt-2" {...register("start_date")} /></Field>
-          <Field label="Fecha de entrega" error={errors.due_date?.message}><Input type="date" className="mt-2" {...register("due_date")} /></Field>
-          <Field label="Dirección" error={errors.address?.message}><Input className="mt-2" {...register("address")} /></Field>
-          <Field label="Distrito" error={errors.district?.message}><Input className="mt-2" {...register("district")} /></Field>
-          <Field label="Ciudad" error={errors.city?.message}><Input className="mt-2" {...register("city")} /></Field>
-          <Field label="Área (m²)" error={errors.area_m2?.message}><Input type="number" min="0.01" step="0.01" className="mt-2" {...register("area_m2")} /></Field>
+          <Field label="Fase" error={errors.phase?.message}><Input {...register("phase")} /></Field>
+          <Field label="Fecha de inicio" error={errors.start_date?.message}><Input type="date"  {...register("start_date")} /></Field>
+          <Field label="Fecha de entrega" error={errors.due_date?.message}><Input type="date"  {...register("due_date")} /></Field>
+          <Field label="Dirección" error={errors.address?.message}><Input {...register("address")} /></Field>
+          <Field label="Distrito" error={errors.district?.message}><Input {...register("district")} /></Field>
+          <Field label="Ciudad" error={errors.city?.message}><Input {...register("city")} /></Field>
+          <Field label="Área (m²)" error={errors.area_m2?.message}><Input type="number" min="0.01" step="0.01"  {...register("area_m2")} /></Field>
           {canAdminister && (
-            <Field label="Honorarios" error={errors.fee?.message}><Input type="number" min="0" step="0.01" className="mt-2" {...register("fee")} /></Field>
+            <Field label="Honorarios" error={errors.fee?.message}><Input type="number" min="0" step="0.01"  {...register("fee")} /></Field>
           )}
           {!canAdminister && <Input type="hidden" {...register("fee")} />}
           <Field label={`Progreso (${progress}%)`} error={errors.progress?.message}>
@@ -213,7 +213,7 @@ export function ProjectForm({
               ))}
             </fieldset>
             <Field label="Responsable principal" error={errors.lead_id?.message}>
-              <Controller name="lead_id" control={control} render={({ field }) => <AppSelect value={field.value} onValueChange={field.onChange} emptyLabel="Sin responsable principal" options={options.users.filter((user) => selectedMembers.includes(user.id)).map((user) => ({ value: user.id, label: user.full_name }))} className="mt-2 w-full" />} />
+              <Controller name="lead_id" control={control} render={({ field }) => <AppSelect value={field.value} onValueChange={field.onChange} emptyLabel="Sin responsable principal" options={options.users.filter((user) => selectedMembers.includes(user.id)).map((user) => ({ value: user.id, label: user.full_name }))} className="w-full" />} />
             </Field>
           </div>
         </section>

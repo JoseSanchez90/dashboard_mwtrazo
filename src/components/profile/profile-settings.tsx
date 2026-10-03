@@ -148,7 +148,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           description="Actualiza el nombre visible en MWTRAZO. El correo es administrado por la cuenta de acceso."
         >
           <form onSubmit={saveName} className="space-y-5" noValidate>
-            <Label className="block space-y-2 text-sm font-medium">
+            <Label className="flex flex-col items-stretch gap-2 text-sm font-medium">
               <span>Nombre completo</span>
               <Input
                 {...nameForm.register("full_name")}
@@ -193,7 +193,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         >
           <form onSubmit={savePassword} className="space-y-5" noValidate>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Label className="block space-y-2 text-sm font-medium">
+              <Label className="flex flex-col items-stretch gap-2 text-sm font-medium">
                 <span>Nueva contraseña</span>
                 <Input
                   type="password"
@@ -207,7 +207,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   </span>
                 )}
               </Label>
-              <Label className="block space-y-2 text-sm font-medium">
+              <Label className="flex flex-col items-stretch gap-2 text-sm font-medium">
                 <span>Confirmar contraseña</span>
                 <Input
                   type="password"

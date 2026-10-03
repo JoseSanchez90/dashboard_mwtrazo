@@ -15,16 +15,26 @@ const MIME_TYPES_BY_EXTENSION: Record<string, readonly string[]> = {
   zip: ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
 };
 export const projectFileIdSchema = z.uuid();
-export const projectFileUploadSchema = z.object({ project_id: z.uuid(), category: z.enum(PROJECT_FILE_CATEGORIES) });
+export const projectFileFieldsSchema = z.object({ project_id: z.uuid(), category: z.enum(PROJECT_FILE_CATEGORIES) });
+export const projectFileUploadSchema = projectFileFieldsSchema.extend({
+  original_name: z.string().min(1).max(180),
+  original_type: z.string().min(1).max(150),
+  original_size: z.coerce.number().int().positive().max(MAX_PROJECT_FILE_SIZE),
+  compression: z.enum(["none", "gzip"]),
+});
+
+export function validateProjectFileMetadata(name: string, mime: string, size: number): string | null {
+  const normalizedName = name.trim();
+  if (!normalizedName || normalizedName.length > 180 || /[\\/\u0000-\u001f]/.test(normalizedName)) return "El nombre del archivo no es válido.";
+  const extension = normalizedName.split(".").pop()?.toLowerCase();
+  if (!extension || !ALLOWED_PROJECT_FILE_EXTENSIONS.includes(extension as (typeof ALLOWED_PROJECT_FILE_EXTENSIONS)[number])) return "La extensión del archivo no está permitida.";
+  const normalizedMime = mime || "application/octet-stream";
+  if (!ALLOWED_PROJECT_FILE_MIME_TYPES.has(normalizedMime) || !MIME_TYPES_BY_EXTENSION[extension]?.includes(normalizedMime)) return "La extensión y el tipo MIME del archivo no coinciden.";
+  if (!Number.isSafeInteger(size) || size <= 0 || size > MAX_PROJECT_FILE_SIZE) return "El archivo debe pesar como máximo 25 MB.";
+  return null;
+}
 
 export function validateProjectFile(file: File): string | null {
-  const name = file.name.trim();
-  if (!name || name.length > 180 || /[\\/\u0000-\u001f]/.test(name)) return "El nombre del archivo no es válido.";
-  const extension = name.split(".").pop()?.toLowerCase();
-  if (!extension || !ALLOWED_PROJECT_FILE_EXTENSIONS.includes(extension as (typeof ALLOWED_PROJECT_FILE_EXTENSIONS)[number])) return "La extensión del archivo no está permitida.";
-  const mime = file.type || "application/octet-stream";
-  if (!ALLOWED_PROJECT_FILE_MIME_TYPES.has(mime) || !MIME_TYPES_BY_EXTENSION[extension]?.includes(mime)) return "La extensión y el tipo MIME del archivo no coinciden.";
-  if (file.size <= 0 || file.size > MAX_PROJECT_FILE_SIZE) return "El archivo debe pesar como máximo 25 MB.";
-  return null;
+  return validateProjectFileMetadata(file.name, file.type, file.size);
 }
 

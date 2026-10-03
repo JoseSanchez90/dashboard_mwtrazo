@@ -88,7 +88,7 @@ export function ProjectPhaseSettings({ templates }: { templates: ProjectPhaseTem
       <Dialog open={dialog !== null} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>{selected ? "Renombrar fase" : "Agregar fase"}</DialogTitle><DialogDescription>El cambio se aplicará a la plantilla para proyectos nuevos, sin modificar el historial existente.</DialogDescription></DialogHeader>
-          <Label className="block space-y-2 text-sm font-medium"><span>Nombre</span><Input value={name} maxLength={120} autoFocus onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); save(); } }} /></Label>
+          <Label className="flex flex-col items-stretch gap-2 text-sm font-medium"><span>Nombre</span><Input value={name} maxLength={120} autoFocus onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); save(); } }} /></Label>
           <DialogFooter><Button variant="outline" disabled={pending} onClick={() => setDialog(null)}>Cancelar</Button><Button disabled={pending || name.trim().length < 2} onClick={save}>{pending && <LoaderCircle className="animate-spin" />}Guardar</Button></DialogFooter>
         </DialogContent>
       </Dialog>

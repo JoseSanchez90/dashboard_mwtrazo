@@ -7,16 +7,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { projectFileIdSchema } from "@/lib/validations/project-files";
 
-export type ProjectFileActionResult = { ok: true; url?: string } | { ok: false; error: string };
+export type ProjectFileActionResult = { ok: true; url?: string; fileName?: string; fileType?: string; compression?: "none" | "gzip" } | { ok: false; error: string };
 
 export async function getProjectFileDownloadUrlAction(id: string): Promise<ProjectFileActionResult> {
   await requirePermission(PERMISSIONS.DOWNLOAD_PROJECT_FILES); const parsed = projectFileIdSchema.safeParse(id);
   if (!parsed.success) return { ok: false, error: "Archivo inválido." };
-  const supabase = await createClient(); const { data: file } = await supabase.from("project_files").select("file_path, file_name").eq("id", parsed.data).maybeSingle();
+  const supabase = await createClient(); const { data: file } = await supabase.from("project_files").select("file_path, file_name, file_type, compression").eq("id", parsed.data).maybeSingle();
   if (!file) return { ok: false, error: "El archivo no existe o no está disponible." };
   const { data, error } = await supabase.storage.from("project-files").createSignedUrl(file.file_path, 60, { download: file.file_name });
   if (error || !data) return { ok: false, error: "No fue posible preparar la descarga." };
-  return { ok: true, url: data.signedUrl };
+  return { ok: true, url: data.signedUrl, fileName: file.file_name, fileType: file.file_type, compression: file.compression };
 }
 
 export async function deleteProjectFileAction(id: string): Promise<ProjectFileActionResult> {
