@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, FileText, FolderKanban, ListTodo, ReceiptText, TriangleAlert, WalletCards } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  FileText,
+  FolderKanban,
+  ListTodo,
+  ReceiptText,
+  TriangleAlert,
+  WalletCards,
+} from "lucide-react";
 
 import { ProjectStatusChart } from "@/components/dashboard/project-status-chart";
 import { PageHeader } from "@/components/shared/page-header";
@@ -12,43 +21,446 @@ import { TASK_PRIORITY_LABELS, type TaskPriority } from "@/types/task";
 import type { DashboardData } from "@/types/dashboard";
 
 export const metadata: Metadata = { title: "Inicio" };
-const currency = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", currencyDisplay: "symbol" });
-const priorityOrder: Record<TaskPriority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+const currency = new Intl.NumberFormat("es-PE", {
+  style: "currency",
+  currency: "PEN",
+  currencyDisplay: "symbol",
+});
+const priorityOrder: Record<TaskPriority, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
 
-function formatDate(value: string | null, withTime = false) { if (!value) return "Sin fecha"; return new Intl.DateTimeFormat("es-PE", withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium", timeZone: "UTC" }).format(new Date(withTime ? value : `${value}T00:00:00Z`)); }
-function greeting() { const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "2-digit", hour12: false, timeZone: "America/Lima" }).format(new Date())); return hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches"; }
-
-function Kpis({ items }: { items: Array<{ label: string; value: string | number; icon: typeof FolderKanban; tone?: string }> }) {
-  return <section className="grid overflow-hidden rounded-xl border bg-card sm:grid-cols-2 xl:grid-cols-3">{items.map((item, index) => { const Icon = item.icon; return <div key={item.label} className={`p-5 sm:p-6 ${index ? "border-t sm:border-l sm:nth-[2]:border-t-0 xl:nth-[3]:border-t-0" : ""}`}><div className="flex items-center justify-between gap-3 text-muted-foreground"><span className="text-sm">{item.label}</span><Icon className={`size-4 ${item.tone ?? ""}`} /></div><p className="mt-4 text-3xl font-semibold tracking-tight">{item.value}</p></div>; })}</section>;
+function formatDate(value: string | null, withTime = false) {
+  if (!value) return "Sin fecha";
+  return new Intl.DateTimeFormat(
+    "es-PE",
+    withTime
+      ? { dateStyle: "medium", timeStyle: "short" }
+      : { dateStyle: "medium", timeZone: "UTC" },
+  ).format(new Date(withTime ? value : `${value}T00:00:00Z`));
+}
+function greeting() {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "America/Lima",
+    }).format(new Date()),
+  );
+  return hour < 12
+    ? "Buenos días"
+    : hour < 19
+      ? "Buenas tardes"
+      : "Buenas noches";
 }
 
-function Projects({ data, assistant }: { data: DashboardData; assistant: boolean }) {
-  const projects = (assistant ? data.projects : data.projects.filter((item) => item.status === "active")).slice(0, 5);
-  return <section className="rounded-xl border bg-card"><div className="flex items-center justify-between border-b px-5 py-4"><div><h2 className="font-semibold">{assistant ? "Mis proyectos" : "Proyectos activos"}</h2><p className="mt-0.5 text-xs text-muted-foreground">{assistant ? "Proyectos donde participas" : "Trabajo actualmente en curso"}</p></div><Link href="/proyectos" className="text-xs font-medium text-brand hover:underline">Ver todos</Link></div><div className="divide-y">{projects.length ? projects.map((project) => <Link key={project.id} href={`/proyectos/${project.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/20"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 font-mono text-[0.65rem] font-semibold text-brand">{project.code.slice(0, 4)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{project.name}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{project.client_name} · {project.phase ?? "Sin fase"}</p></div><div className="w-20"><div className="mb-1 text-right text-xs font-medium">{project.progress}%</div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-brand" style={{ width: `${project.progress}%` }} /></div></div></Link>) : <p className="px-5 py-10 text-center text-sm text-muted-foreground">No hay proyectos para mostrar.</p>}</div></section>;
+function Kpis({
+  items,
+}: {
+  items: Array<{
+    label: string;
+    value: string | number;
+    icon: typeof FolderKanban;
+    tone?: string;
+  }>;
+}) {
+  return (
+    <section className="grid overflow-hidden rounded-xl border bg-card sm:grid-cols-2 xl:grid-cols-3">
+      {items.map((item, index) => {
+        const Icon = item.icon;
+        return (
+          <div
+            key={item.label}
+            className={`p-5 sm:p-6 ${index ? "border-t sm:border-l sm:nth-[2]:border-t-0 xl:nth-[3]:border-t-0" : ""}`}
+          >
+            <div className="flex items-center justify-between gap-3 text-muted-foreground">
+              <span className="text-sm">{item.label}</span>
+              <Icon className={`size-4 ${item.tone ?? ""}`} />
+            </div>
+            <p className="mt-4 text-3xl font-semibold tracking-tight">
+              {item.value}
+            </p>
+          </div>
+        );
+      })}
+    </section>
+  );
 }
 
-function Agenda({ data, assistant }: { data: DashboardData; assistant: boolean }) {
-  const events = data.events.slice(0, 5); return <section className="rounded-xl border bg-card"><div className="flex items-center justify-between border-b px-5 py-4"><h2 className="font-semibold">{assistant ? "Próximos eventos" : "Agenda próxima"}</h2><Link href="/calendario" className="text-xs font-medium text-brand hover:underline">Abrir calendario</Link></div><div className="divide-y">{events.length ? events.map((event) => <div key={event.id} className="flex gap-4 px-5 py-4"><div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted"><CalendarDays className="size-4 text-brand" /></div><div className="min-w-0"><p className="truncate text-sm font-medium">{event.title}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(event.start_at, true)} · {EVENT_TYPE_LABELS[event.type]}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{event.project_name ?? "Evento general"}</p></div></div>) : <p className="px-5 py-10 text-center text-sm text-muted-foreground">No hay eventos próximos.</p>}</div></section>;
+function Projects({
+  data,
+  assistant,
+}: {
+  data: DashboardData;
+  assistant: boolean;
+}) {
+  const projects = (
+    assistant
+      ? data.projects
+      : data.projects.filter((item) => item.status === "active")
+  ).slice(0, 5);
+  return (
+    <section className="rounded-xl border bg-card">
+      <div className="flex items-center justify-between border-b px-5 py-4">
+        <div>
+          <h2 className="font-semibold">
+            {assistant ? "Mis proyectos" : "Proyectos activos"}
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {assistant
+              ? "Proyectos donde participas"
+              : "Trabajo actualmente en curso"}
+          </p>
+        </div>
+        <Link
+          href="/proyectos"
+          className="text-xs font-medium text-brand hover:underline"
+        >
+          Ver todos
+        </Link>
+      </div>
+      <div className="divide-y">
+        {projects.length ? (
+          projects.map((project) => (
+            <Link
+              key={project.id}
+              href={`/proyectos/${project.id}`}
+              className="flex items-center gap-4 px-5 py-4 hover:bg-muted/20"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 font-mono text-[0.65rem] font-semibold text-brand">
+                {project.code.slice(0, 4)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{project.name}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {project.client_name} · {project.phase ?? "Sin fase"}
+                </p>
+              </div>
+              <div className="w-20">
+                <div className="mb-1 text-right text-xs font-medium">
+                  {project.progress}%
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-brand"
+                    style={{ width: `${project.progress}%` }}
+                  />
+                </div>
+              </div>
+            </Link>
+          ))
+        ) : (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No hay proyectos para mostrar.
+          </p>
+        )}
+      </div>
+    </section>
+  );
 }
 
-function PriorityTasks({ data, assistant }: { data: DashboardData; assistant: boolean }) {
-  const tasks = [...data.tasks].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority] || (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999")).slice(0, 6);
-  return <section className="rounded-xl border bg-card"><div className="flex items-center justify-between border-b px-5 py-4"><h2 className="font-semibold">{assistant ? "Mis tareas" : "Tareas prioritarias"}</h2><Link href="/tareas" className="text-xs font-medium text-brand hover:underline">Ver tareas</Link></div><div className="divide-y">{tasks.length ? tasks.map((task) => <div key={task.id} className="flex items-center gap-3 px-5 py-3.5"><span className={`size-2 rounded-full ${task.priority === "urgent" ? "bg-destructive" : task.priority === "high" ? "bg-status-warning" : "bg-brand"}`} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{task.title}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{task.project_name ?? "Sin proyecto"} · {TASK_PRIORITY_LABELS[task.priority]}</p></div><span className="text-xs text-muted-foreground">{formatDate(task.due_date)}</span></div>) : <p className="px-5 py-10 text-center text-sm text-muted-foreground">No hay tareas pendientes.</p>}</div></section>;
+function Agenda({
+  data,
+  assistant,
+}: {
+  data: DashboardData;
+  assistant: boolean;
+}) {
+  const events = data.events.slice(0, 5);
+  return (
+    <section className="rounded-xl border bg-card">
+      <div className="flex items-center justify-between border-b px-5 py-4">
+        <h2 className="font-semibold">
+          {assistant ? "Próximos eventos" : "Agenda próxima"}
+        </h2>
+        <Link
+          href="/calendario"
+          className="text-xs font-medium text-brand hover:underline"
+        >
+          Abrir calendario
+        </Link>
+      </div>
+      <div className="divide-y">
+        {events.length ? (
+          events.map((event) => (
+            <div key={event.id} className="flex gap-4 px-5 py-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <CalendarDays className="size-4 text-brand" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{event.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatDate(event.start_at, true)} ·{" "}
+                  {EVENT_TYPE_LABELS[event.type]}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {event.project_name ?? "Evento general"}
+                </p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No hay eventos próximos.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PriorityTasks({
+  data,
+  assistant,
+}: {
+  data: DashboardData;
+  assistant: boolean;
+}) {
+  const tasks = [...data.tasks]
+    .sort(
+      (a, b) =>
+        priorityOrder[a.priority] - priorityOrder[b.priority] ||
+        (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"),
+    )
+    .slice(0, 6);
+  return (
+    <section className="rounded-xl border bg-card">
+      <div className="flex items-center justify-between border-b px-5 py-4">
+        <h2 className="font-semibold">
+          {assistant ? "Mis tareas" : "Tareas prioritarias"}
+        </h2>
+        <Link
+          href="/tareas"
+          className="text-xs font-medium text-brand hover:underline"
+        >
+          Ver tareas
+        </Link>
+      </div>
+      <div className="divide-y">
+        {tasks.length ? (
+          tasks.map((task) => (
+            <div key={task.id} className="flex items-center gap-3 px-5 py-3.5">
+              <span
+                className={`size-2 rounded-full ${task.priority === "urgent" ? "bg-destructive" : task.priority === "high" ? "bg-status-warning" : "bg-brand"}`}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{task.title}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {task.project_name ?? "Sin proyecto"} ·{" "}
+                  {TASK_PRIORITY_LABELS[task.priority]}
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {formatDate(task.due_date)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No hay tareas pendientes.
+          </p>
+        )}
+      </div>
+    </section>
+  );
 }
 
 function Deliveries({ data }: { data: DashboardData }) {
-  const today = new Date().toISOString().slice(0, 10); const projects = data.projects.filter((item) => item.due_date && item.due_date >= today && item.status !== "completed" && item.status !== "cancelled").sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")).slice(0, 5);
-  return <section className="rounded-xl border bg-card"><div className="border-b px-5 py-4"><h2 className="font-semibold">Próximas entregas</h2></div><div className="divide-y">{projects.length ? projects.map((project) => <Link key={project.id} href={`/proyectos/${project.id}`} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-muted/20"><div className="min-w-0"><p className="truncate text-sm font-medium">{project.name}</p><p className="mt-0.5 text-xs text-muted-foreground">{project.code} · {project.phase ?? "Sin fase"}</p></div><span className="shrink-0 text-xs font-medium">{formatDate(project.due_date)}</span></Link>) : <p className="px-5 py-10 text-center text-sm text-muted-foreground">No hay entregas programadas.</p>}</div></section>;
+  const today = new Date().toISOString().slice(0, 10);
+  const projects = data.projects
+    .filter(
+      (item) =>
+        item.due_date &&
+        item.due_date >= today &&
+        item.status !== "completed" &&
+        item.status !== "cancelled",
+    )
+    .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
+    .slice(0, 5);
+  return (
+    <section className="rounded-xl border bg-card">
+      <div className="border-b px-5 py-4">
+        <h2 className="font-semibold">Próximas entregas</h2>
+      </div>
+      <div className="divide-y">
+        {projects.length ? (
+          projects.map((project) => (
+            <Link
+              key={project.id}
+              href={`/proyectos/${project.id}`}
+              className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-muted/20"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{project.name}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {project.code} · {project.phase ?? "Sin fase"}
+                </p>
+              </div>
+              <span className="shrink-0 text-xs font-medium">
+                {formatDate(project.due_date)}
+              </span>
+            </Link>
+          ))
+        ) : (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No hay entregas programadas.
+          </p>
+        )}
+      </div>
+    </section>
+  );
 }
 
-function RecentFiles({ data }: { data: DashboardData }) { return <section className="rounded-xl border bg-card"><div className="flex items-center justify-between border-b px-5 py-4"><h2 className="font-semibold">Archivos recientes</h2><Link href="/archivos" className="text-xs font-medium text-brand hover:underline">Ver archivos</Link></div><div className="divide-y">{data.files.slice(0, 5).map((file) => <Link href={`/proyectos/${file.project_id}`} key={file.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/20"><FileText className="size-4 shrink-0 text-brand" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{file.file_name}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{file.project_name} · {PROJECT_FILE_CATEGORY_LABELS[file.category]}</p></div><span className="text-xs text-muted-foreground">{formatDate(file.created_at, true)}</span></Link>)}</div>{data.files.length === 0 && <p className="px-5 py-10 text-center text-sm text-muted-foreground">No hay archivos recientes.</p>}</section>; }
+function RecentFiles({ data }: { data: DashboardData }) {
+  return (
+    <section className="rounded-xl border bg-card">
+      <div className="flex items-center justify-between border-b px-5 py-4">
+        <h2 className="font-semibold">Archivos recientes</h2>
+        <Link
+          href="/archivos"
+          className="text-xs font-medium text-brand hover:underline"
+        >
+          Ver archivos
+        </Link>
+      </div>
+      <div className="divide-y">
+        {data.files.slice(0, 5).map((file) => (
+          <Link
+            href={`/proyectos/${file.project_id}`}
+            key={file.id}
+            className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/20"
+          >
+            <FileText className="size-4 shrink-0 text-brand" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{file.file_name}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {file.project_name} ·{" "}
+                {PROJECT_FILE_CATEGORY_LABELS[file.category]}
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {formatDate(file.created_at, true)}
+            </span>
+          </Link>
+        ))}
+      </div>
+      {data.files.length === 0 && (
+        <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+          No hay archivos recientes.
+        </p>
+      )}
+    </section>
+  );
+}
 
 export default async function DashboardPage() {
-  const [user, data] = await Promise.all([requireAuthenticatedUser(), getDashboardData()]); const assistant = user.profile.role === "assistant"; const firstName = user.profile.full_name.trim().split(/\s+/)[0] || user.profile.full_name;
-  const date = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Lima" }).format(new Date());
-  const adminKpis = [{ label: "Proyectos activos", value: data.kpis.activeProjects, icon: FolderKanban }, { label: "Tareas pendientes", value: data.kpis.pendingTasks, icon: ListTodo }, { label: "Tareas vencidas", value: data.kpis.overdueTasks, icon: TriangleAlert, tone: "text-destructive" }, { label: "Eventos próximos", value: data.kpis.upcomingEvents, icon: CalendarDays }, { label: "Próximas entregas", value: data.kpis.upcomingDeliveries, icon: CheckCircle2 }, { label: "Pendiente de cobro", value: currency.format(data.kpis.pendingCollection ?? 0), icon: WalletCards }];
-  const assistantKpis = [{ label: "Mis proyectos", value: data.projects.length, icon: FolderKanban }, { label: "Mis tareas pendientes", value: data.kpis.pendingTasks, icon: ListTodo }, { label: "Tareas vencidas", value: data.kpis.overdueTasks, icon: TriangleAlert, tone: "text-destructive" }, { label: "Próximos eventos", value: data.kpis.upcomingEvents, icon: CalendarDays }];
-  return <div className="space-y-8"><PageHeader title={`${greeting()}, ${firstName}.`} description={date.charAt(0).toUpperCase() + date.slice(1)} /><Kpis items={assistant ? assistantKpis : adminKpis} />
-    {assistant ? <><div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"><PriorityTasks data={data} assistant /><Projects data={data} assistant /></div><div className="grid gap-6 xl:grid-cols-2"><Agenda data={data} assistant /><Deliveries data={data} /></div><RecentFiles data={data} /></> : <><div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]"><Projects data={data} assistant={false} /><section className="rounded-xl border bg-card p-5"><div className="mb-4 flex items-center gap-2"><ReceiptText className="size-4 text-brand" /><h2 className="font-semibold">Proyectos por estado</h2></div><ProjectStatusChart data={data.projectStatusCounts} /></section></div><div className="grid gap-6 xl:grid-cols-3"><Agenda data={data} assistant={false} /><PriorityTasks data={data} assistant={false} /><Deliveries data={data} /></div></>}
-  </div>;
+  const [user, data] = await Promise.all([
+    requireAuthenticatedUser(),
+    getDashboardData(),
+  ]);
+  const assistant = user.profile.role === "assistant";
+  const firstName =
+    user.profile.full_name.trim().split(/\s+/)[0] || user.profile.full_name;
+  const date = new Intl.DateTimeFormat("es-PE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Lima",
+  }).format(new Date());
+  const adminKpis = [
+    {
+      label: "Proyectos activos",
+      value: data.kpis.activeProjects,
+      icon: FolderKanban,
+    },
+    {
+      label: "Tareas pendientes",
+      value: data.kpis.pendingTasks,
+      icon: ListTodo,
+    },
+    {
+      label: "Tareas vencidas",
+      value: data.kpis.overdueTasks,
+      icon: TriangleAlert,
+      tone: "text-destructive",
+    },
+    {
+      label: "Eventos próximos",
+      value: data.kpis.upcomingEvents,
+      icon: CalendarDays,
+    },
+    {
+      label: "Próximas entregas",
+      value: data.kpis.upcomingDeliveries,
+      icon: CheckCircle2,
+    },
+    {
+      label: "Pendiente de cobro",
+      value: currency.format(data.kpis.pendingCollection ?? 0),
+      icon: WalletCards,
+    },
+  ];
+  const assistantKpis = [
+    { label: "Mis proyectos", value: data.projects.length, icon: FolderKanban },
+    {
+      label: "Mis tareas pendientes",
+      value: data.kpis.pendingTasks,
+      icon: ListTodo,
+    },
+    {
+      label: "Tareas vencidas",
+      value: data.kpis.overdueTasks,
+      icon: TriangleAlert,
+      tone: "text-destructive",
+    },
+    {
+      label: "Próximos eventos",
+      value: data.kpis.upcomingEvents,
+      icon: CalendarDays,
+    },
+  ];
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title={`${greeting()}, ${firstName}.`}
+        description={date.charAt(0).toUpperCase() + date.slice(1)}
+      />
+      <Kpis items={assistant ? assistantKpis : adminKpis} />
+      {assistant ? (
+        <>
+          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <PriorityTasks data={data} assistant />
+            <Projects data={data} assistant />
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Agenda data={data} assistant />
+            <Deliveries data={data} />
+          </div>
+          <RecentFiles data={data} />
+        </>
+      ) : (
+        <>
+          <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+            <Projects data={data} assistant={false} />
+            <section className="rounded-xl border bg-card p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <ReceiptText className="size-4 text-brand" />
+                <h2 className="font-semibold">Proyectos por estado</h2>
+              </div>
+              <ProjectStatusChart data={data.projectStatusCounts} />
+            </section>
+          </div>
+          <div className="grid gap-6 xl:grid-cols-3">
+            <Agenda data={data} assistant={false} />
+            <PriorityTasks data={data} assistant={false} />
+            <Deliveries data={data} />
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

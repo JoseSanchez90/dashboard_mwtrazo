@@ -281,7 +281,7 @@ export function ClientsTable({
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-card">
-        <Table className="min-w-[720px]">
+        <Table className="min-w-180">
           <TableHeader className="bg-muted/40 text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

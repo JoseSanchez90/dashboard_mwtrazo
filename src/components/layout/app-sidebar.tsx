@@ -11,7 +11,10 @@ import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/auth";
 import type { StudioBranding } from "@/types/workspace-settings";
 
-type AppSidebarProps = { user: { name: string; role: UserRole; avatarUrl?: string | null }; studio: StudioBranding };
+type AppSidebarProps = {
+  user: { name: string; role: UserRole; avatarUrl?: string | null };
+  studio: StudioBranding;
+};
 
 export function AppSidebar({ user, studio }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -24,7 +27,12 @@ export function AppSidebar({ user, studio }: AppSidebarProps) {
       )}
     >
       <div className="flex h-16 items-center border-b px-4">
-        <div className={cn("flex min-w-0 items-center gap-3", collapsed && "mx-auto")}>
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-3",
+            collapsed && "mx-auto",
+          )}
+        >
           <StudioMark name={studio.studioName} logoUrl={studio.logoUrl} />
           {!collapsed && (
             <span className="truncate text-sm font-semibold tracking-[0.16em]">
@@ -49,7 +57,12 @@ export function AppSidebar({ user, studio }: AppSidebarProps) {
         >
           {collapsed ? <ChevronRight /> : <ChevronLeft />}
         </Button>
-        <SidebarUser collapsed={collapsed} name={user.name} role={user.role} avatarUrl={user.avatarUrl} />
+        <SidebarUser
+          collapsed={collapsed}
+          name={user.name}
+          role={user.role}
+          avatarUrl={user.avatarUrl}
+        />
       </div>
     </aside>
   );

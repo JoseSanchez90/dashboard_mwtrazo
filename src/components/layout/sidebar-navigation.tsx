@@ -31,40 +31,46 @@ export function SidebarNavigation({
             </p>
           )}
           <ul className="space-y-1">
-            {section.items.filter((item) => !item.adminOnly || hasPermission(role, PERMISSIONS.MANAGE_USERS)).map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
+            {section.items
+              .filter(
+                (item) =>
+                  !item.adminOnly ||
+                  hasPermission(role, PERMISSIONS.MANAGE_USERS),
+              )
+              .map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
 
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onNavigate}
-                    title={collapsed ? item.label : undefined}
-                    aria-label={collapsed ? item.label : undefined}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cn(
-                      "group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                      collapsed && "justify-center px-0",
-                      isActive && "bg-muted text-foreground",
-                    )}
-                  >
-                    {isActive && (
-                      <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-brand" />
-                    )}
-                    <Icon
-                      aria-hidden="true"
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      title={collapsed ? item.label : undefined}
+                      aria-label={collapsed ? item.label : undefined}
+                      aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "size-[1.05rem] shrink-0 transition-colors",
-                        isActive ? "text-brand" : "group-hover:text-foreground",
+                        "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-orange-100 dark:hover:bg-orange-950 hover:text-foreground",
+                        collapsed && "justify-center px-0",
+                        isActive &&
+                          "bg-orange-200 dark:bg-orange-900 text-foreground",
                       )}
-                      strokeWidth={1.8}
-                    />
-                    {!collapsed && <span>{item.label}</span>}
-                  </Link>
-                </li>
-              );
-            })}
+                    >
+                      <Icon
+                        aria-hidden="true"
+                        className={cn(
+                          "size-[1.05rem] shrink-0 transition-colors",
+                          isActive
+                            ? "text-brand"
+                            : "group-hover:text-foreground",
+                        )}
+                        strokeWidth={1.8}
+                      />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
           </ul>
         </div>
       ))}
