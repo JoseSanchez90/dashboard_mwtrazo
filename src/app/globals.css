@@ -78,7 +78,29 @@
 .mw-calendar .fc .fc-toolbar-chunk:first-child .fc-today-button { margin-left: 0.5rem; }
 .mw-calendar .fc .fc-col-header-cell-cushion,
 .mw-calendar .fc .fc-daygrid-day-number { padding: 0.5rem; }
-.mw-calendar .fc .fc-event { border-radius: 0.35rem; padding: 1px 3px; cursor: pointer; }
+.mw-calendar .fc .fc-scrollgrid { overflow: hidden; border-radius: 0.75rem; }
+.mw-calendar .fc .fc-col-header-cell { background: color-mix(in oklch, var(--muted) 45%, transparent); }
+.mw-calendar .fc .fc-col-header-cell-cushion { font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+.mw-calendar .fc .fc-daygrid-day { transition: background-color 150ms ease; }
+.mw-calendar .fc .fc-daygrid-day:hover { background: color-mix(in oklch, var(--muted) 30%, transparent); }
+.mw-calendar .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  align-items: center;
+  background: var(--brand);
+  border-radius: 999px;
+  color: var(--brand-foreground);
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  margin: 0.3rem;
+  padding: 0;
+  width: 1.75rem;
+}
+.mw-calendar .fc .fc-event { border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; padding: 2px 4px; }
+.mw-calendar .fc .fc-event:hover { filter: brightness(0.94); }
+.mw-calendar .fc .fc-daygrid-more-link { color: var(--brand); font-size: 0.75rem; font-weight: 600; }
+.mw-calendar .fc .fc-list { border-radius: 0.75rem; overflow: hidden; }
+.mw-calendar .fc .fc-list-day-cushion { background: color-mix(in oklch, var(--muted) 55%, transparent); }
+.mw-calendar .fc .fc-list-event:hover td { background: color-mix(in oklch, var(--brand) 6%, var(--card)); }
 
 @media (max-width: 767px) {
   .mw-calendar .fc .fc-toolbar { align-items: stretch; flex-direction: column; gap: 0.75rem; }

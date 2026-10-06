@@ -93,7 +93,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       </header>
 
       <Tabs defaultValue="summary">
-        <div className="overflow-x-auto border-b"><TabsList variant="line" className="min-w-max justify-start px-0">
+        <div className="border-b"><TabsList variant="line" className="h-auto max-w-full flex-wrap justify-start px-0">
           <TabsTrigger value="summary"><UserRound />Resumen</TabsTrigger>
           <TabsTrigger value="tasks"><CheckSquare2 />Tareas</TabsTrigger>
           <TabsTrigger value="calendar"><CalendarDays />Calendario</TabsTrigger>

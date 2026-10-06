@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createColumnHelper,
@@ -74,7 +74,7 @@ const statusStyles: Record<ProjectStatus, string> = {
 };
 
 function StatusBadge({ status }: { status: ProjectStatus }) {
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[status]}`}>{PROJECT_STATUS_LABELS[status]}</span>;
+  return <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[status]}`}>{PROJECT_STATUS_LABELS[status]}</span>;
 }
 
 function ProjectActions({ project, canDelete }: { project: ProjectListItem; canDelete: boolean }) {
@@ -145,7 +145,7 @@ function ProjectCard({ project, canDelete }: { project: ProjectListItem; canDele
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0"><Link href={`/proyectos/${project.id}`} className="truncate font-semibold hover:text-brand hover:underline">{project.name}</Link><p className="mt-1 truncate text-sm text-muted-foreground">{project.client_name}</p></div>
+          <div className="min-w-0 flex-1"><Link href={`/proyectos/${project.id}`} title={project.name} className="line-clamp-2 font-semibold leading-5 hover:text-brand hover:underline">{project.name}</Link><p className="mt-1 truncate text-sm text-muted-foreground">{project.client_name}</p></div>
           <StatusBadge status={project.status} />
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
@@ -159,6 +159,20 @@ function ProjectCard({ project, canDelete }: { project: ProjectListItem; canDele
   );
 }
 
+function useGridColumns() {
+  const [columns, setColumns] = useState(3);
+  useEffect(() => {
+    const large = window.matchMedia("(min-width: 1536px)");
+    const small = window.matchMedia("(min-width: 640px)");
+    const update = () => setColumns(large.matches ? 3 : small.matches ? 2 : 1);
+    update();
+    large.addEventListener("change", update);
+    small.addEventListener("change", update);
+    return () => { large.removeEventListener("change", update); small.removeEventListener("change", update); };
+  }, []);
+  return columns;
+}
+
 export function ProjectsExplorer({ projects, canCreate, canDelete }: { projects: ProjectListItem[]; canCreate: boolean; canDelete: boolean }) {
   const formatting = useFormattingPreferences();
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -166,6 +180,9 @@ export function ProjectsExplorer({ projects, canCreate, canDelete }: { projects:
   const [status, setStatus] = useState("");
   const [clientId, setClientId] = useState("");
   const [userId, setUserId] = useState("");
+  const [gridPage, setGridPage] = useState(0);
+  const gridColumns = useGridColumns();
+  const gridPageSize = gridColumns * 3;
 
   const clients = useMemo(() => Array.from(new Map(projects.map((project) => [project.client_id, project.client_name])).entries()).sort((a, b) => a[1].localeCompare(b[1])), [projects]);
   const users = useMemo(() => Array.from(new Map(projects.flatMap((project) => project.members.map((member) => [member.user_id, member.full_name] as const))).entries()).sort((a, b) => a[1].localeCompare(b[1])), [projects]);
@@ -189,6 +206,9 @@ export function ProjectsExplorer({ projects, canCreate, canDelete }: { projects:
     columnHelper.display({ id: "actions", header: () => <span className="sr-only">Acciones</span>, cell: ({ row }) => <div className="flex justify-end"><ProjectActions project={row.original} canDelete={canDelete} /></div> }),
   ]), [canDelete, formatting]);
   const table = useTable({ features, data: filtered, columns, initialState: { pagination: { pageIndex: 0, pageSize: 10 } } });
+  const gridPageCount = Math.max(Math.ceil(filtered.length / gridPageSize), 1);
+  const currentGridPage = Math.min(gridPage, gridPageCount - 1);
+  const visibleGridProjects = filtered.slice(currentGridPage * gridPageSize, (currentGridPage + 1) * gridPageSize);
 
   if (projects.length === 0) {
     return <div className="mt-8"><EmptyState icon={Grid2X2} title="Aún no hay proyectos" description="Crea el primer proyecto para comenzar a organizar el trabajo del estudio." action={canCreate ? <Link href="/proyectos/nuevo" className="text-sm font-medium text-brand hover:underline">Crear proyecto</Link> : undefined} /></div>;
@@ -197,11 +217,11 @@ export function ProjectsExplorer({ projects, canCreate, canDelete }: { projects:
   return (
     <div className="mt-8 space-y-5">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-        <div className="relative min-w-0 flex-1 xl:max-w-md"><Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, código o cliente…" aria-label="Buscar proyectos" className="pl-9" /></div>
+        <div className="relative min-w-0 flex-1 xl:max-w-md"><Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => { setSearch(event.target.value); setGridPage(0); }} placeholder="Buscar por nombre, código o cliente…" aria-label="Buscar proyectos" className="pl-9" /></div>
         <div className="grid gap-2 sm:grid-cols-3 xl:flex">
-          <AppSelect ariaLabel="Filtrar proyectos por estado" value={status} onValueChange={setStatus} emptyLabel="Todos los estados" options={PROJECT_STATUSES.map((item) => ({ value: item, label: PROJECT_STATUS_LABELS[item] }))} className="w-full xl:w-fit xl:min-w-40" />
-          <AppSelect ariaLabel="Filtrar proyectos por cliente" value={clientId} onValueChange={setClientId} emptyLabel="Todos los clientes" options={clients.map(([id, name]) => ({ value: id, label: name }))} className="w-full xl:w-fit xl:min-w-40" />
-          <AppSelect ariaLabel="Filtrar proyectos por responsable" value={userId} onValueChange={setUserId} emptyLabel="Todos los responsables" options={users.map(([id, name]) => ({ value: id, label: name }))} className="w-full xl:w-fit xl:min-w-48" />
+          <AppSelect ariaLabel="Filtrar proyectos por estado" value={status} onValueChange={(value) => { setStatus(value); setGridPage(0); }} emptyLabel="Todos los estados" options={PROJECT_STATUSES.map((item) => ({ value: item, label: PROJECT_STATUS_LABELS[item] }))} className="w-full xl:w-fit xl:min-w-40" />
+          <AppSelect ariaLabel="Filtrar proyectos por cliente" value={clientId} onValueChange={(value) => { setClientId(value); setGridPage(0); }} emptyLabel="Todos los clientes" options={clients.map(([id, name]) => ({ value: id, label: name }))} className="w-full xl:w-fit xl:min-w-40" />
+          <AppSelect ariaLabel="Filtrar proyectos por responsable" value={userId} onValueChange={(value) => { setUserId(value); setGridPage(0); }} emptyLabel="Todos los responsables" options={users.map(([id, name]) => ({ value: id, label: name }))} className="w-full xl:w-fit xl:min-w-48" />
         </div>
         <div className="flex rounded-lg border p-1"><Button variant={view === "grid" ? "secondary" : "ghost"} size="icon-sm" onClick={() => setView("grid")} aria-label="Vista grid"><Grid2X2 /></Button><Button variant={view === "list" ? "secondary" : "ghost"} size="icon-sm" onClick={() => setView("list")} aria-label="Vista lista"><List /></Button></div>
       </div>
@@ -209,7 +229,7 @@ export function ProjectsExplorer({ projects, canCreate, canDelete }: { projects:
       {filtered.length === 0 ? (
         <EmptyState icon={Search} title="No se encontraron proyectos" description="Ajusta el buscador o los filtros seleccionados." />
       ) : view === "grid" ? (
-        <div className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">{filtered.map((project) => <ProjectCard key={project.id} project={project} canDelete={canDelete} />)}</div>
+        <div className="space-y-4"><div className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">{visibleGridProjects.map((project) => <ProjectCard key={project.id} project={project} canDelete={canDelete} />)}</div><div className="flex flex-col gap-3 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>{filtered.length} proyecto{filtered.length === 1 ? "" : "s"} · máximo 3 filas por página</span><div className="flex items-center gap-2"><span>Página {currentGridPage + 1} de {gridPageCount}</span><Button variant="outline" size="icon-sm" onClick={() => setGridPage(currentGridPage - 1)} disabled={currentGridPage === 0} aria-label="Página anterior"><ChevronLeft /></Button><Button variant="outline" size="icon-sm" onClick={() => setGridPage(currentGridPage + 1)} disabled={currentGridPage + 1 >= gridPageCount} aria-label="Página siguiente"><ChevronRight /></Button></div></div></div>
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card">
           <Table className="min-w-[900px]"><TableHeader className="bg-muted/40 text-xs tracking-wide text-muted-foreground uppercase">{table.getHeaderGroups().map((group) => <TableRow key={group.id}>{group.headers.map((header) => <TableHead key={header.id} className="px-4 last:text-right">{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>)}</TableRow>)}</TableHeader><TableBody>{table.getRowModel().rows.map((row) => <TableRow key={row.id}>{row.getAllCells().map((cell) => <TableCell key={cell.id} className="px-4">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>)}</TableRow>)}</TableBody></Table>

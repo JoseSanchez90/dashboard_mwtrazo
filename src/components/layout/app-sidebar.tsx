@@ -23,7 +23,7 @@ export function AppSidebar({ user, studio }: AppSidebarProps) {
     <aside
       className={cn(
         "sticky top-0 hidden h-screen shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex",
-        collapsed ? "w-[4.5rem]" : "w-64",
+        collapsed ? "w-18" : "w-64",
       )}
     >
       <div className="flex h-16 items-center border-b px-4">

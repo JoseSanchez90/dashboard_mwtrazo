@@ -10,7 +10,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import esLocale from "@fullcalendar/core/locales/es";
 import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarPlus, Check, Clock3, LoaderCircle, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
+import { CalendarDays, CalendarPlus, Check, ChevronLeft, ChevronRight, Clock3, LoaderCircle, MapPin, Pencil, Search, Trash2, UserRound, X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -37,6 +37,7 @@ const calendarViews = [
   { value: "timeGridDay", label: "Día" },
   { value: "listMonth", label: "Agenda" },
 ] as const;
+const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 type CalendarView = (typeof calendarViews)[number]["value"];
 
 function isCalendarView(value: string): value is CalendarView {
@@ -87,8 +88,26 @@ export function CalendarWorkspace({ events, options, canCreate, canEdit, canDele
   const formatting = useFormattingPreferences();
   const calendarRef = useRef<FullCalendar>(null);
   const [calendarView, setCalendarView] = useState<CalendarView>("dayGridMonth");
+  const [visibleDate, setVisibleDate] = useState(() => new Date());
+  const [visibleTitle, setVisibleTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [eventType, setEventType] = useState("");
   const [selected, setSelected] = useState<CalendarEvent>(); const [detailOpen, setDetailOpen] = useState(false); const [formOpen, setFormOpen] = useState(initialCreate && canCreate); const [editing, setEditing] = useState<CalendarEvent>(); const [selection, setSelection] = useState<{ start: string; end: string; allDay: boolean }>();
-  const calendarEvents = useMemo(() => events.map((event) => ({ id: event.id, title: event.title, start: event.start_at, end: event.end_at, allDay: event.all_day, backgroundColor: eventColors[event.type], borderColor: eventColors[event.type] })), [events]);
+  const yearOptions = useMemo(() => {
+    const years = new Set(events.map((event) => new Date(event.start_at).getFullYear()));
+    years.add(new Date().getFullYear());
+    return [...years].sort((a, b) => a - b).map((year) => ({ value: String(year), label: String(year) }));
+  }, [events]);
+  const filteredEvents = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase("es");
+    return events.filter((event) => {
+      if (eventType && event.type !== eventType) return false;
+      if (!query) return true;
+      return [event.title, event.description, event.project_name, event.client_name, event.assignee_name, event.location, EVENT_TYPE_LABELS[event.type]]
+        .some((value) => value?.toLocaleLowerCase("es").includes(query));
+    });
+  }, [eventType, events, searchQuery]);
+  const calendarEvents = useMemo(() => filteredEvents.map((event) => ({ id: event.id, title: event.title, start: event.start_at, end: event.end_at, allDay: event.all_day, backgroundColor: eventColors[event.type], borderColor: eventColors[event.type] })), [filteredEvents]);
   const openNew = (value?: DateSelectArg) => { if (!canCreate) return; setEditing(undefined); setSelection(value ? { start: value.startStr, end: value.endStr, allDay: value.allDay } : undefined); setFormOpen(true); };
   const showEvent = (info: EventClickArg) => { const event = events.find((item) => item.id === info.event.id); if (event) { setSelected(event); setDetailOpen(true); } };
   const changeCalendarView = (value: string) => {
@@ -96,8 +115,49 @@ export function CalendarWorkspace({ events, options, canCreate, canEdit, canDele
     setCalendarView(value);
     calendarRef.current?.getApi().changeView(value);
   };
+  const navigate = (direction: "prev" | "next" | "today") => calendarRef.current?.getApi()[direction]();
+  const goToDate = (month: number, year: number) => calendarRef.current?.getApi().gotoDate(new Date(year, month, 1));
+  const clearFilters = () => { setSearchQuery(""); setEventType(""); };
+  const hasFilters = searchQuery.trim().length > 0 || eventType.length > 0;
 
-  return <div className="space-y-4"><div className="flex justify-end">{canCreate && <Button onClick={() => openNew()}><CalendarPlus />Nuevo evento</Button>}</div><div className="mw-calendar overflow-hidden rounded-xl border bg-card p-3 sm:p-5"><div className="mb-4 flex justify-end"><Tabs value={calendarView} onValueChange={changeCalendarView}><TabsList aria-label="Vista del calendario">{calendarViews.map((view) => <TabsTrigger key={view.value} value={view.value}>{view.label}</TabsTrigger>)}</TabsList></Tabs></div><FullCalendar ref={calendarRef} plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]} locale={esLocale} firstDay={formatting.week_starts_on} initialView="dayGridMonth" headerToolbar={{ left: "prev,next today", center: "title", right: "" }} buttonText={{ today: "Hoy" }} datesSet={({ view }) => { if (isCalendarView(view.type)) setCalendarView(view.type); }} height="auto" events={calendarEvents} selectable={canCreate} select={openNew} eventClick={showEvent} nowIndicator dayMaxEvents /></div>
+  return <div className="space-y-4">
+    <div className="flex justify-end">{canCreate && <Button onClick={() => openNew()}><CalendarPlus />Nuevo evento</Button>}</div>
+    <section className="mw-calendar overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="space-y-4 border-b bg-muted/20 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand"><CalendarDays className="size-5" /></div>
+            <div><h2 className="font-semibold">Explorar calendario</h2><p className="text-sm text-muted-foreground">Busca y navega rápidamente entre los eventos del estudio.</p></div>
+          </div>
+          <Tabs value={calendarView} onValueChange={changeCalendarView}><TabsList aria-label="Vista del calendario">{calendarViews.map((view) => <TabsTrigger key={view.value} value={view.value}>{view.label}</TabsTrigger>)}</TabsList></Tabs>
+        </div>
+        <div className="grid gap-2 md:grid-cols-[minmax(16rem,1fr)_auto_auto_auto]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="pl-9" placeholder="Buscar evento, proyecto, cliente o responsable…" aria-label="Buscar eventos" />
+          </div>
+          <AppSelect value={eventType} onValueChange={setEventType} emptyLabel="Todos los tipos" ariaLabel="Filtrar por tipo" className="w-full md:w-40" options={EVENT_TYPES.map((type) => ({ value: type, label: EVENT_TYPE_LABELS[type] }))} />
+          <AppSelect value={String(visibleDate.getMonth())} onValueChange={(value) => goToDate(Number(value), visibleDate.getFullYear())} ariaLabel="Ir al mes" className="w-full md:w-36" options={months.map((month, index) => ({ value: String(index), label: month }))} />
+          <AppSelect value={String(visibleDate.getFullYear())} onValueChange={(value) => goToDate(visibleDate.getMonth(), Number(value))} ariaLabel="Ir al año" className="w-full md:w-28" options={yearOptions} />
+        </div>
+      </div>
+      <div className="grid gap-3 border-b px-4 py-3 sm:px-5 md:grid-cols-[1fr_auto_1fr] md:items-center">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => navigate("prev")} aria-label="Periodo anterior"><ChevronLeft /></Button>
+          <Button variant="outline" onClick={() => navigate("today")}>Hoy</Button>
+          <Button variant="outline" size="icon" onClick={() => navigate("next")} aria-label="Periodo siguiente"><ChevronRight /></Button>
+        </div>
+        <h3 className="text-base font-semibold capitalize md:text-center">{visibleTitle}</h3>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground md:justify-end">
+          <span>{filteredEvents.length} {filteredEvents.length === 1 ? "evento" : "eventos"}</span>
+          {hasFilters && <Button variant="ghost" size="sm" onClick={clearFilters}><X />Limpiar</Button>}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 border-b px-4 py-3 text-xs text-muted-foreground sm:px-5">
+        {EVENT_TYPES.map((type) => <span key={type} className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: eventColors[type] }} />{EVENT_TYPE_LABELS[type]}</span>)}
+      </div>
+      <div className="p-3 sm:p-5"><FullCalendar ref={calendarRef} plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]} locale={esLocale} firstDay={formatting.week_starts_on} initialView="dayGridMonth" headerToolbar={false} datesSet={({ view }) => { if (isCalendarView(view.type)) setCalendarView(view.type); setVisibleDate(view.currentStart); setVisibleTitle(view.title); }} height="auto" events={calendarEvents} selectable={canCreate} select={openNew} eventClick={showEvent} nowIndicator dayMaxEvents dayMaxEventRows={3} moreLinkText={(count) => `+${count} más`} stickyHeaderDates /></div>
+    </section>
   <EventDetailDialog event={selected} open={detailOpen} onOpenChange={setDetailOpen} canEdit={canEdit} canDelete={canDelete} onEdit={() => { setDetailOpen(false); setEditing(selected); setSelection(undefined); setFormOpen(true); }} />
   <EventFormDialog open={formOpen} onOpenChange={setFormOpen} event={editing} selection={selection} options={options} fixedProjectId={fixedProjectId} /></div>;
 }

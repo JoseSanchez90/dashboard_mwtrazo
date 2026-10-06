@@ -6,6 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "bootstrap:users": "node --env-file=.env.local scripts/bootstrap-users.mjs",
+    "seed:demo:audit": "node --env-file=.env.local scripts/seed-demo-data.mjs",
+    "seed:demo": "node --env-file=.env.local scripts/seed-demo-data.mjs --apply",
+    "seed:history:audit": "node --env-file=.env.local scripts/seed-project-history.mjs",
+    "seed:history": "node --env-file=.env.local scripts/seed-project-history.mjs --apply",
+    "align:services:audit": "node --env-file=.env.local scripts/align-project-services.mjs",
+    "align:services": "node --env-file=.env.local scripts/align-project-services.mjs --apply",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
